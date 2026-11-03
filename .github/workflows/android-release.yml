@@ -55,7 +55,7 @@ jobs:
 
       - name: Build Android APK
         working-directory: android
-        run: ./gradlew --no-daemon assembleDebug
+        run: bash gradlew --no-daemon assembleDebug
 
       - name: Name APK for download
         if: startsWith(github.ref, 'refs/tags/')
