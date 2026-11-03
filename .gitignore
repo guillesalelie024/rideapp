@@ -32,6 +32,7 @@ npm-debug.log*
 !.env.example
 /.npm-cache
 /Microsoft/Windows/PowerShell/ModuleAnalysisCache
+/android/.kotlin
 /platforms
 /plugins
 /www
