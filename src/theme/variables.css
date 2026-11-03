@@ -1,0 +1,27 @@
+:root {
+  --white: #ffffff;
+  --pastel-green: #E8F4EC;
+  --light-mint: #F2F8F3;
+  --primary-green: #3F8064;
+  --dark-green: #174C40;
+  --border: #DCE9DF;
+  --secondary-text: #658078;
+  --sage: #78a982;
+  --sage-action: #3F8064;
+  --sage-action-hover: #346952;
+  --forest: #174C40;
+  --charcoal: #29332d;
+  --muted: #658078;
+  --muted-foreground: #658078;
+
+  --ion-color-primary: #3F8064;
+  --ion-color-primary-rgb: 63, 128, 100;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #367157;
+  --ion-color-primary-tint: #528d73;
+
+  --ion-background-color: #ffffff;
+  --ion-text-color: #29332d;
+  --ion-font-family: 'Inter', sans-serif;
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ride</string>
+    <string name="title_activity_main">Ride</string>
+    <string name="package_name">com.ride.app</string>
+    <string name="custom_url_scheme">com.ride.app</string>
+</resources>
