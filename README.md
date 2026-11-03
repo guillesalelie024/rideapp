@@ -56,6 +56,10 @@ Never expose `DATABASE_URL`, `RESEND_API_KEY`, or other server secrets through `
 
 The Capacitor Android project is in `android/`. Location and notification permissions are declared in `android/app/src/main/AndroidManifest.xml`. Run `npx cap sync android` after changing web assets or Capacitor plugins.
 
+Android APK releases are published on the [GitHub Releases page](https://github.com/guillesalelie024/rideapp/releases). On an Android phone, download the `Ride-v...apk` asset from the latest release and open it to install. Android may ask you to allow installation from that browser or file manager. These APKs are debug-signed builds for direct installation; they are not Play Store releases.
+
+To publish a new APK, push a version tag such as `v1.0.1`. GitHub Actions builds the web app, syncs Capacitor, and attaches the APK to a GitHub Release.
+
 ## Data and privacy
 
 Trips, itineraries, saved places, preferences, and sessions are stored locally first. Signed-in users can sync trips through the API. Passwords are salted and hashed server-side; sessions expire after 14 days. Near Me and live tracking request location only when used, and coordinates stay on the device. See the in-app Terms and Privacy pages for details.
