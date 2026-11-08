@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { IonContent, IonIcon, IonPage } from '@ionic/vue';
+import { computed, ref, watch } from 'vue';
+import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import {
   addCircleOutline,
   alertCircleOutline,
@@ -9,6 +9,7 @@ import {
   documentTextOutline,
   downloadOutline,
   locationOutline,
+  starOutline,
   timeOutline,
 } from 'ionicons/icons';
 import { useRoute, useRouter } from 'vue-router';
@@ -16,7 +17,9 @@ import RideBottomNav from '../components/RideBottomNav.vue';
 import RideAppHeader from '../components/RideAppHeader.vue';
 import { getRideDestinations } from '../data/destinations';
 import { getItineraryStops, ITINERARY_DRAFT_KEY, saveItinerary } from '../data/itinerary';
-import { DRAFT_TRIP_ID_KEY, getTrip, type TripRecord } from '../data/trips';
+import { DRAFT_TRIP_ID_KEY, getTrip, replaceTrips, type TripRecord } from '../data/trips';
+import { fetchAccountTrips, getRideSession } from '../data/api';
+import { fetchTripRatings, submitTripRating, type TripRating } from '../data/api';
 import { showError, showSuccess } from '../composables/feedback';
 
 const route = useRoute();
@@ -24,6 +27,12 @@ const router = useRouter();
 const places = getRideDestinations();
 const trip = ref<TripRecord | null>(null);
 const downloadingPdf = ref(false);
+const ratingModalVisible = ref(false);
+const ratingValue = ref(0);
+const ratingReview = ref('');
+const ratingSubmitted = ref(false);
+const tripRatings = ref<TripRating[]>([]);
+const ratingsLoading = ref(false);
 
 const modeNames: Record<string, string> = {
   tricycle: 'Tricycle',
@@ -39,12 +48,52 @@ const statusLabels: Record<TripRecord['status'], string> = {
   cancelled: 'Cancelled',
 };
 
-try {
-  const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id;
-  trip.value = getTrip(String(id || ''));
-} catch {
-  showError('The completed trip could not be loaded from this device.');
+const receiptLoading = ref(true);
+let receiptRequest = 0;
+
+function goToTrips() {
+  void router.replace('/trips');
 }
+
+async function loadReceipt() {
+  const requestId = ++receiptRequest;
+  const id = String(Array.isArray(route.params.id) ? route.params.id[0] : route.params.id || '');
+  receiptLoading.value = true;
+  try {
+    trip.value = getTrip(id);
+    tripRatings.value = [];
+    if (trip.value) {
+      void loadTripRatings();
+      return;
+    }
+    if (getRideSession()) {
+      try {
+        const remoteTrips = await fetchAccountTrips();
+        if (requestId !== receiptRequest) return;
+        replaceTrips(remoteTrips);
+      } catch {
+        // keep local fallback below
+      }
+      if (requestId !== receiptRequest) return;
+      trip.value = getTrip(id);
+      if (trip.value) {
+        void loadTripRatings();
+        return;
+      }
+    }
+    if (requestId !== receiptRequest) return;
+    trip.value = null;
+  } catch {
+    if (requestId !== receiptRequest) return;
+    trip.value = null;
+  } finally {
+    if (requestId === receiptRequest) receiptLoading.value = false;
+  }
+}
+
+void loadReceipt();
+watch(() => route.params.id, () => { void loadReceipt(); });
+onIonViewWillEnter(() => { void loadReceipt(); });
 
 const tripPlaces = computed(() => trip.value ? getItineraryStops(trip.value.itinerary) : []);
 const visitedPlaces = computed(() => tripPlaces.value.filter((place) => trip.value?.visitedStopIds.includes(place.id)));
@@ -134,10 +183,44 @@ function planAnother() {
     showError('A new trip draft could not be created.');
   }
 }
+
+async function loadTripRatings() {
+  if (!trip.value?.id) return;
+  ratingsLoading.value = true;
+  try {
+    tripRatings.value = await fetchTripRatings(trip.value.id);
+  } catch {
+    // Ratings are optional; silently ignore errors
+  } finally {
+    ratingsLoading.value = false;
+  }
+}
+
+async function submitRating() {
+  if (!trip.value?.id || ratingValue.value < 1 || ratingValue.value > 5) return;
+  try {
+    await submitTripRating({
+      tripId: trip.value.id,
+      rating: ratingValue.value,
+      review: ratingReview.value.trim() || undefined,
+    });
+    ratingSubmitted.value = true;
+    ratingModalVisible.value = false;
+    await loadTripRatings();
+    showSuccess('Thank you for rating your trip!');
+  } catch (error) {
+    showError(error instanceof Error ? error.message : 'Could not submit your rating.');
+  }
+}
+
+function selectRating(value: number) {
+  ratingValue.value = value;
+}
 </script>
 
 <template>
-  <ion-page>
+  <div class="tc-page-wrapper">
+    <ion-page>
     <ion-content :fullscreen="true">
       <div class="tc-page">
         <RideAppHeader
@@ -149,7 +232,13 @@ function planAnother() {
         </RideAppHeader>
 
         <main class="tc-main">
-          <template v-if="trip">
+          <section v-if="receiptLoading" class="tc-card tc-empty" aria-live="polite">
+            <ion-icon class="tc-empty-icon" :icon="documentTextOutline"></ion-icon>
+            <h2 class="tc-title-card">Loading receipt…</h2>
+            <p class="tc-note">Getting your completed trip details.</p>
+          </section>
+
+          <template v-else-if="trip">
             <section class="tc-completion-banner" aria-label="Trip completion status">
               <span class="tc-check" aria-hidden="true">
                 <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
@@ -307,7 +396,7 @@ function planAnother() {
             <ion-icon class="tc-empty-icon" :icon="alertCircleOutline"></ion-icon>
             <h2 class="tc-title-card">Receipt not found</h2>
             <p class="tc-note">This completed trip may have been removed from this device.</p>
-            <button class="tc-btn tc-btn-primary" type="button" @click="router.push('/trips')">
+            <button class="tc-btn tc-btn-primary" type="button" @click="goToTrips">
               Go to My Trips
             </button>
           </section>
@@ -317,13 +406,93 @@ function planAnother() {
       </div>
     </ion-content>
   </ion-page>
+
+  <div v-if="ratingModalVisible || ratingSubmitted" class="rating-backdrop" @click.self="ratingModalVisible = false">
+    <section class="rating-dialog" role="alertdialog" aria-modal="true" aria-labelledby="rating-title">
+      <div v-if="!ratingSubmitted" class="rating-header">
+        <ion-icon class="rating-icon" :icon="starOutline"></ion-icon>
+        <h2 id="rating-title">Rate your trip</h2>
+        <p class="rating-subtitle">How was your experience?</p>
+      </div>
+      <div v-else class="rating-header">
+        <ion-icon class="rating-icon rating-icon-success" :icon="checkmarkCircleOutline"></ion-icon>
+        <h2 id="rating-title">Thank you!</h2>
+        <p class="rating-subtitle">Your rating has been submitted.</p>
+      </div>
+
+      <div v-if="!ratingSubmitted" class="rating-stars">
+        <button
+          v-for="n in 5"
+          :key="n"
+          type="button"
+          class="rating-star"
+          :class="{ 'rating-star-active': ratingValue >= n }"
+          :aria-label="`${n} star${n !== 1 ? 's' : ''}`"
+          @click="selectRating(n)"
+        >
+          <ion-icon :icon="starOutline"></ion-icon>
+        </button>
+      </div>
+
+      <div v-if="!ratingSubmitted" class="rating-review">
+        <label class="rating-label">Add a review (optional)</label>
+        <textarea
+          v-model="ratingReview"
+          class="rating-textarea"
+          placeholder="Share your thoughts about this trip..."
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="rating-actions">
+        <button v-if="!ratingSubmitted" class="rating-btn rating-btn-cancel" type="button" @click="ratingModalVisible = false">Skip</button>
+        <button
+          v-if="!ratingSubmitted"
+          class="rating-btn rating-btn-submit"
+          type="button"
+          :disabled="ratingValue < 1"
+          @click="submitRating"
+        >
+          {{ ratingSubmitted ? 'Submitted' : 'Submit Rating' }}
+        </button>
+        <button v-else class="rating-btn rating-btn-done" type="button" @click="ratingModalVisible = false">Done</button>
+      </div>
+    </section>
+  </div>
+
+  <div v-if="tripRatings.length > 0 && !ratingSubmitted" class="existing-ratings">
+    <h3 class="ratings-title">Traveler Ratings</h3>
+    <div class="ratings-list">
+      <div
+        v-for="rating in tripRatings"
+        :key="rating.ratedAt"
+        class="rating-item"
+      >
+        <div class="rating-item-header">
+          <span class="rating-item-user">{{ rating.userName ?? 'A traveler' }}</span>
+          <span class="rating-item-date">{{ new Date(rating.ratedAt).toLocaleDateString() }}</span>
+        </div>
+        <div class="rating-item-stars">
+          <ion-icon
+            v-for="n in 5"
+            :key="n"
+            :icon="starOutline"
+            class="rating-item-star"
+            :class="{ 'rating-item-star-active': rating.rating >= n }"
+          ></ion-icon>
+        </div>
+        <p v-if="rating.review" class="rating-item-review">{{ rating.review }}</p>
+      </div>
+    </div>
+  </div>
+  </div>
 </template>
 
 <style scoped>
 .tc-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbf9 0%, #ffffff 40%);
-  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, var(--surface-soft) 0%, var(--bg) 40%);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
 .tc-check {
@@ -333,8 +502,8 @@ function planAnother() {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: rgba(63, 128, 100, 0.18);
-  color: #2f6b4f;
+  background: color-mix(in srgb, var(--brand-accent) 0.18, transparent);
+  color: var(--brand-mid);
   font-size: 36px;
 }
 
@@ -343,10 +512,10 @@ function planAnother() {
   align-items: center;
   gap: 16px;
   padding: 18px 22px;
-  border: 1px solid #e3eee6;
+  border: 1px solid var(--surface-soft);
   border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 12px 32px -28px rgba(23, 76, 64, 0.5);
+  background: var(--surface);
+  box-shadow: 0 12px 32px -28px color-mix(in srgb, var(--brand-deep) 0.5, transparent);
 }
 
 .tc-completion-copy {
@@ -358,26 +527,27 @@ function planAnother() {
 
 .tc-completion-copy h2 {
   margin: 0;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .tc-completion-copy p {
   margin: 0;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .tc-completion-copy .tc-completion-name {
-  color: #3f8064;
+  color: var(--brand-accent);
   font-weight: 600;
 }
 
 .tc-kicker {
   margin: 0;
-  color: #3f8064;
+  color: var(--brand-accent);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.16em;
@@ -388,8 +558,6 @@ function planAnother() {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  max-width: 880px;
-  margin: 0 auto;
   padding: 24px 20px 0;
 }
 
@@ -398,10 +566,10 @@ function planAnother() {
   flex-direction: column;
   gap: 16px;
   padding: 22px 24px;
-  border: 1px solid #e6f0ea;
+  border: 1px solid var(--surface-soft);
   border-radius: 26px;
-  background: #ffffff;
-  box-shadow: 0 60px 70px -60px rgba(23, 76, 64, 0.9);
+  background: var(--surface);
+  box-shadow: 0 60px 70px -60px color-mix(in srgb, var(--brand-deep) 0.9, transparent);
 }
 
 .tc-card-head {
@@ -414,8 +582,8 @@ function planAnother() {
 
 .tc-title-card {
   margin: 4px 0 0;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-family: var(--font-body);
   font-size: 18px;
   font-weight: 700;
 }
@@ -426,8 +594,8 @@ function planAnother() {
   align-items: center;
   padding: 6px 14px;
   border-radius: 999px;
-  background: rgba(63, 128, 100, 0.12);
-  color: #2f6b4f;
+  background: color-mix(in srgb, var(--brand-accent) 0.12, transparent);
+  color: var(--brand-mid);
   font-size: 12px;
   font-weight: 600;
 }
@@ -450,25 +618,25 @@ function planAnother() {
   width: 14px;
   height: 14px;
   margin-top: 5px;
-  border: 3px solid #3f8064;
+  border: 3px solid var(--brand-accent);
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .tc-route-dot-end {
-  background: #3f8064;
+  background: var(--brand);
 }
 
 .tc-route-line {
   width: 2px;
   height: 26px;
   margin-left: 6px;
-  background: #d8e9df;
+  background: var(--border);
 }
 
 .tc-route-label {
   margin: 0;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -477,14 +645,14 @@ function planAnother() {
 
 .tc-route-name {
   margin: 3px 0 0;
-  color: #174c40;
+  color: var(--text-strong);
   font-size: 16px;
   font-weight: 600;
 }
 
 .tc-route-address {
   margin: 2px 0 0;
-  color: #5b7566;
+  color: var(--text-body);
   font-size: 13px;
 }
 
@@ -501,12 +669,12 @@ function planAnother() {
   min-width: 0;
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(63, 128, 100, 0.08);
+  background: color-mix(in srgb, var(--brand-accent) 0.08, transparent);
 }
 
 .tc-fact ion-icon {
   flex: none;
-  color: #3f8064;
+  color: var(--brand-accent);
   font-size: 20px;
 }
 
@@ -518,7 +686,7 @@ function planAnother() {
 }
 
 .tc-fact-label {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -527,7 +695,7 @@ function planAnother() {
 
 .tc-fact-value {
   overflow: hidden;
-  color: #174c40;
+  color: var(--text-strong);
   font-size: 14px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -538,8 +706,8 @@ function planAnother() {
   margin: 0;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(63, 128, 100, 0.08);
-  color: #2f6b4f;
+  background: color-mix(in srgb, var(--brand-accent) 0.08, transparent);
+  color: var(--brand-mid);
   font-size: 13px;
 }
 
@@ -558,7 +726,7 @@ function planAnother() {
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border: 1px solid #eef5f0;
+  border: 1px solid var(--surface-soft);
   border-radius: 18px;
 }
 
@@ -569,14 +737,14 @@ function planAnother() {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3f8064 0%, #2f6b4f 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 100%);
+  color: var(--on-brand);
   font-weight: 700;
 }
 
 .tc-stop-number-muted {
-  background: #eef5f0;
-  color: #658078;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
 }
 
 .tc-stop-info {
@@ -588,13 +756,13 @@ function planAnother() {
 
 .tc-stop-name {
   margin: 0;
-  color: #174c40;
+  color: var(--text-strong);
   font-weight: 600;
 }
 
 .tc-stop-address {
   margin: 0;
-  color: #5b7566;
+  color: var(--text-body);
   font-size: 13px;
 }
 
@@ -605,7 +773,7 @@ function planAnother() {
   padding: 6px 10px;
   border-radius: 999px;
   background: rgba(101, 128, 120, 0.12);
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -616,13 +784,13 @@ function planAnother() {
 }
 
 .tc-stop-status.visited {
-  background: rgba(63, 128, 100, 0.14);
-  color: #2f6b4f;
+  background: color-mix(in srgb, var(--brand-accent) 0.14, transparent);
+  color: var(--brand-mid);
 }
 
 .tc-total {
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-family: var(--font-body);
   font-size: 22px;
   font-weight: 700;
 }
@@ -639,7 +807,7 @@ function planAnother() {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #f0f7f3;
+  border-bottom: 1px solid var(--surface-soft);
 }
 
 .tc-expense-row:last-child {
@@ -647,12 +815,12 @@ function planAnother() {
 }
 
 .tc-expense-label {
-  color: #5b7566;
+  color: var(--text-body);
   text-transform: capitalize;
 }
 
 .tc-expense-amount {
-  color: #174c40;
+  color: var(--text-strong);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -661,18 +829,18 @@ function planAnother() {
 .tc-fare,
 .tc-note {
   margin: 0;
-  color: #5b7566;
+  color: var(--text-body);
   font-size: 13px;
   line-height: 1.5;
 }
 
 .tc-estimate strong {
-  color: #174c40;
+  color: var(--text-strong);
 }
 
 .tc-fare {
   padding-top: 12px;
-  border-top: 1px solid #f0f7f3;
+  border-top: 1px solid var(--surface-soft);
 }
 
 .tc-actions {
@@ -680,9 +848,15 @@ function planAnother() {
 }
 
 .tc-actions-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.tc-actions-grid .tc-btn {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .tc-btn {
@@ -706,8 +880,8 @@ function planAnother() {
 }
 
 .tc-btn-primary {
-  background: linear-gradient(135deg, #3f8064 0%, #2f6b4f 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 100%);
+  color: var(--on-brand);
   box-shadow: 0 22px 44px -28px rgba(47, 107, 79, 0.9);
 }
 
@@ -716,9 +890,9 @@ function planAnother() {
   min-width: 0;
   min-height: 82px;
   padding: 10px 6px;
-  border-color: #d8e9df;
-  background: #ffffff;
-  color: #2f6b4f;
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--brand-mid);
   font-size: 12px;
   line-height: 1.25;
   text-align: center;
@@ -726,7 +900,7 @@ function planAnother() {
 
 .tc-btn-outline ion-icon {
   flex: none;
-  color: #3f8064;
+  color: var(--brand-accent);
   font-size: 21px;
 }
 
@@ -740,7 +914,7 @@ function planAnother() {
 }
 
 .tc-empty-icon {
-  color: #9fc5b3;
+  color: var(--text-muted);
   font-size: 48px;
 }
 
@@ -785,5 +959,224 @@ function planAnother() {
     padding-left: 32px;
     padding-right: 32px;
   }
+}
+
+/* Trip rating modal */
+.rating-backdrop {
+  position: fixed;
+  z-index: 11000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(15, 35, 27, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.rating-dialog {
+  width: min(420px, 100%);
+  max-height: calc(100dvh - 32px);
+  padding: 24px;
+  border: 1px solid var(--surface-soft);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 30px 70px rgba(15, 35, 27, 0.25);
+  text-align: center;
+  display: grid;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.rating-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.rating-icon {
+  font-size: 48px;
+  color: var(--brand-accent);
+}
+
+.rating-icon-success {
+  color: var(--success);
+}
+
+.rating-header h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.rating-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.rating-star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rating-star ion-icon {
+  font-size: 32px;
+  color: var(--border);
+  transition: color 0.2s ease;
+}
+
+.rating-star-active ion-icon {
+  color: var(--brand-accent);
+  transform: scale(1.1);
+}
+
+.rating-review {
+  text-align: left;
+}
+
+.rating-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rating-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.rating-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.rating-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.rating-btn {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.rating-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rating-btn-cancel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.rating-btn-submit {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.rating-btn-done {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.existing-ratings {
+  margin-top: 24px;
+}
+
+.ratings-title {
+  margin: 0 0 12px 0;
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-body);
+}
+
+.ratings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rating-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.rating-item-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rating-item-user {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rating-item-date {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.rating-item-stars {
+  display: flex;
+  gap: 4px;
+}
+
+.rating-item-star {
+  font-size: 16px;
+  color: var(--border);
+}
+
+.rating-item-star-active {
+  color: var(--brand-accent);
+}
+
+.rating-item-review {
+  margin: 0;
+  color: var(--text-body);
+  font-size: 13px;
+  line-height: 1.5;
 }
 </style>

@@ -47,6 +47,8 @@ try {
 
 const tripPlaces = computed(() => getItineraryStops(itinerary.value));
 
+const backTarget = computed(() => (tripRecordId.value || (typeof route.query.tripId === 'string' && route.query.tripId) || isSavedTrip.value) ? '/trips' : '/itinerary');
+
 function placeImage(place: ItineraryStopView) { return place.image || place.imageFallback || ''; }
 function changeOrder(index: number, offset: -1 | 1) {
   const target = index + offset;
@@ -152,6 +154,7 @@ function startTripAgain() {
           eyebrow="Trip Summary"
           :title="itinerary.tripName || 'My Trip'"
           show-back
+          :back-to="backTarget"
         >
         </RideAppHeader>
 

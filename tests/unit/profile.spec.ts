@@ -10,7 +10,7 @@ import {
   saveFareComparison,
   saveTravelPreferences,
 } from '@/data/profile';
-import { storeRideSession } from '@/data/api';
+import { getRideSession, storeRideSession } from '@/data/api';
 
 const stubs = {
   IonContent: { template: '<div><slot /></div>' },
@@ -149,6 +149,34 @@ describe('ProfilePage.vue', () => {
 
     expect(wrapper.get('#pf-name').element.value).toBe('Calapan Explorer');
     expect(wrapper.get('#pf-email').element.value).toBe('explorer@example.com');
+  });
+
+  test('keeps the selected profile icon when saving updated account details', async () => {
+    storeRideSession({
+      token: 'test-token',
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      user: { id: 'user-1', name: 'Calapan Explorer', email: 'explorer@example.com' },
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        user: { id: 'user-1', name: 'Calapan Traveler', email: 'explorer@example.com' },
+      }),
+    }));
+    const { wrapper } = await mountProfile();
+
+    await wrapper.get('.pf-edit-btn').trigger('click');
+    await wrapper.get('[aria-label="Leaf profile icon"]').trigger('click');
+    await wrapper.get('#pf-name').setValue('Calapan Traveler');
+    expect(wrapper.get('[aria-label="Leaf profile icon"]').attributes('aria-pressed')).toBe('true');
+    await wrapper.get('.pf-edit-form').trigger('submit');
+    await flushPromises();
+
+    expect(getRideSession()?.user.avatar).toBe('leaf');
+    expect(getRideSession()?.user.name).toBe('Calapan Traveler');
+    expect(wrapper.findAll('.ride-profile-avatar[data-avatar="leaf"]')).toHaveLength(2);
+    expect(wrapper.find('.pf-edit-modal').exists()).toBe(false);
   });
 
   test('logging out clears the local trip cache and session', async () => {

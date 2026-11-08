@@ -26,6 +26,36 @@ function nearby(restaurants: readonly string[], cafes: readonly string[]): Nearb
 }
 
 const nearbyByPlace: Record<string, NearbyLists> = {
+  'city college of calapan': {
+    restaurants: [],
+    cafes: ['2N1 Cafe – Lumangbayan Main Branch|nearby (landmark) — Ignacio St., Lumangbayan (confirm walking distance)'],
+  },
+  'divine word college of calapan': {
+    restaurants: [],
+    cafes: [
+      'Pastel Coffee|nearby — 065 Mangga St., Block 3, Santa Maria Village',
+      'POBLA Brews and Booze Calapan|nearby — SMV Mangga St., corner Block 3, Gov. Infantado',
+    ],
+  },
+  'mindoro state university calapan city campus': {
+    restaurants: [
+      'Sinapot sa Dawon Food Stall|inside MinSU area (95Q6+3Q7, Masipit)',
+      'DurYum Bites|near MinSU (exact stall location to confirm)',
+      'Marrow Restobar|Masipit — Strong Republic Nautical Hwy (95J7+55J)',
+      'Streamaker Cafe|Sitio Centro, Brgy. Masipit',
+    ],
+    cafes: [
+      'Nomu Nomu Cafe – Masipit|Masipit (95Q7+3P4)',
+      'Purple Blend by Garen|PCC Village, Masipit',
+      'Kkopi.Tea – Masipit|Strong Republic Nautical Hwy, Masipit',
+      'BigBrew – Masipit|Strong Republic Nautical Hwy, Masipit (95Q7+6MX)',
+      '2N1 Cafe – Lumangbayan Main Branch|landmark — Ignacio St., Lumangbayan (confirm walking distance)',
+    ],
+  },
+  'luna goco colleges inc': {
+    restaurants: [],
+    cafes: ['2N1 Cafe – Luna Goco College service location|on/near campus (confirm exact address)'],
+  },
   'feraren hills': {
     restaurants: ['Sutoru Ramen|180 m', 'Red Tomato Modern Italian|230 m', 'Juancios Burgers House|320 m'],
     cafes: ['Cafe Eros|210 m', '2N1 Cafe|230 m', 'Coffee & Bar|370 m'],
@@ -706,6 +736,10 @@ const placeAliases: Record<string, string> = {
   'cafe eros gov ignacio': 'cafe eros',
   'cafe meow bonifacio st': 'cafe meow',
   'silonay mangrove conservation ecopark': 'silonay mangrove conservation ecopark',
+  'divine word college of calapan grade school department': 'divine word college of calapan',
+  'divine word college of calapan basic education department': 'divine word college of calapan',
+  'southwestern college of maritime business and technology inc scmbt': 'southwestern college of maritime business and technology inc',
+  'st anthony college calapan city inc': 'st anthony college of calapan city inc',
 };
 
 export function getCuratedNearbyFood(placeName: string): NearbyFoodListing[] {

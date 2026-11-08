@@ -73,7 +73,7 @@ function save() {
           back-to="/profile"
         />
 
-        <main class="pref-content">
+        <main class="pref-content desktop-content ride-content">
           <section class="pref-card">
             <h2>Preferred transportation</h2>
             <p class="pref-hint">Select every mode you are comfortable using.</p>
@@ -134,13 +134,13 @@ function save() {
 </template>
 
 <style scoped>
-.pref-shell { min-height: 100vh; padding-bottom: calc(84px + env(safe-area-inset-bottom)); background: #f7fbf8; }
+.pref-shell { min-height: 100vh; padding-bottom: calc(104px + env(safe-area-inset-bottom)); background: var(--bg); }
 .pref-content { display: grid; gap: 14px; width: min(100%, 680px); margin: 0 auto; padding: 18px 16px 30px; }
-.pref-card { display: grid; gap: 8px; padding: 18px; border: 1px solid #dce9df; border-radius: 18px; background: #fff; box-shadow: 0 4px 16px rgb(23 76 64 / 5%); }
-.pref-card h2 { margin: 0; color: #174c40; font-family: 'Poppins', sans-serif; font-size: 16px; }
-.pref-hint { margin: 0 0 4px; color: #658078; font-size: 12px; line-height: 1.5; }
+.pref-card { display: grid; gap: 8px; padding: 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: 0 4px 16px rgb(23 76 64 / 5%); }
+.pref-card h2 { margin: 0; color: var(--text-strong); font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.pref-hint { margin: 0 0 4px; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
 .pref-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.pref-chip { min-height: 42px; padding: 0 14px; border: 1px solid #cfe2d5; border-radius: 999px; background: #fff; color: #2f6b4f; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; }
-.pref-chip-active { border-color: #3f8064; background: #3f8064; color: #fff; }
+.pref-chip { min-height: 42px; padding: 0 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--brand-mid); cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; }
+.pref-chip-active { border-color: var(--brand-accent); background: var(--brand); color: var(--on-brand); }
 .pref-chip:focus-visible { outline: 3px solid rgb(120 169 130 / 55%); outline-offset: 2px; }
 </style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { IonContent, IonIcon, IonPage } from '@ionic/vue';
-import { arrowBackOutline, cafeOutline, restaurantOutline } from 'ionicons/icons';
+import { arrowBackOutline, cafeOutline, restaurantOutline, searchOutline } from 'ionicons/icons';
 import { useRoute } from 'vue-router';
 import RideBottomNav from '../components/RideBottomNav.vue';
 import RideAppHeader from '../components/RideAppHeader.vue';
@@ -37,9 +37,10 @@ function filterListings(listings: readonly { name: string; category: string }[])
             <ion-icon :icon="arrowBackOutline" aria-hidden="true"></ion-icon> Back to Explore
           </router-link>
 
-          <div class="restaurant-search">
+          <form class="restaurant-search home-search app-search" @submit.prevent>
+            <ion-icon class="search-glyph" :icon="searchOutline" aria-hidden="true"></ion-icon>
             <input v-model="query" type="search" placeholder="Search food places..." aria-label="Search food places" />
-          </div>
+          </form>
 
           <p class="restaurant-note">
             This guide lists place names gathered for Calapan City. It does not confirm that a business is open, and it does not provide menus, prices, ratings, or hours. Verify directly before traveling.
@@ -72,13 +73,16 @@ function filterListings(listings: readonly { name: string; category: string }[])
 
 <style scoped>
 .restaurant-page { display: grid; gap: 16px; }
-.restaurant-search input { width: 100%; min-height: 46px; padding: 0 14px; border: 1px solid #dce9df; border-radius: 12px; background: #fff; color: #174c40; font: inherit; }
-.restaurant-search input:focus-visible { outline: 3px solid rgb(120 169 130 / 55%); outline-offset: 2px; }
-.restaurant-note { margin: 0; padding: 12px 14px; border: 1px solid #f0dfb6; border-radius: 12px; background: #fff9ec; color: #7a5a12; font-size: 13px; line-height: 1.55; }
+.restaurant-search { display:flex; align-items:center; gap:12px; width:100%; max-width:none; min-height:60px; padding:10px 18px 10px 20px; border:1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface); box-shadow: var(--shadow-md); transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
+.restaurant-search:focus-within { border-color: var(--brand-accent); box-shadow: var(--shadow-lg); }
+.restaurant-search .search-glyph { color: var(--text-secondary); font-size:20px; flex-shrink:0; }
+.restaurant-search input { flex:1; min-width:0; min-height:0; padding:0; border:0; border-radius:0; background: transparent; color: var(--text-primary); font-size:15px; outline:none; }
+.restaurant-search input::placeholder { color: var(--text-muted); }
+.restaurant-note { margin: 0; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--warning) 32%, var(--border)); border-radius: 12px; background: var(--warning-soft); color: var(--warning); font-size: 13px; line-height: 1.55; }
 .restaurant-group { display: grid; gap: 10px; }
-.restaurant-group h2 { display: flex; align-items: center; gap: 8px; margin: 0; color: #174c40; font-family: 'Poppins', sans-serif; font-size: 17px; }
-.restaurant-group h2 span { margin-left: auto; color: #658078; font-family: inherit; font-size: 12px; font-weight: 600; }
+.restaurant-group h2 { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text-strong); font-family: var(--font-display); font-size: 21px; font-weight: 600; letter-spacing: -0.01em; }
+.restaurant-group h2 span { margin-left: auto; color: var(--text-secondary); font-family: inherit; font-size: 12px; font-weight: 600; }
 .restaurant-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.restaurant-list li { padding: 12px 14px; border: 1px solid #dce9df; border-radius: 12px; background: #fff; color: #2f4f43; font-size: 13px; }
-.restaurant-empty { margin: 0; color: #658078; font-size: 13px; }
+.restaurant-list li { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text-body); font-size: 13px; }
+.restaurant-empty { margin: 0; color: var(--text-secondary); font-size: 13px; }
 </style>

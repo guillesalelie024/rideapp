@@ -29,10 +29,10 @@ const route = useRoute();
 </template>
 
 <style scoped>
-.nf-shell { min-height: 100vh; background: #f7fbf8; }
+.nf-shell { min-height: 100vh; background: var(--bg); }
 .nf-content { display: grid; width: min(100%, 520px); margin: 0 auto; gap: 16px; padding: 28px 16px; }
-.nf-path { overflow-wrap: anywhere; margin: 0; padding: 14px; border: 1px solid #dce9df; border-radius: 12px; background: #fff; color: #526b60; font-family: monospace; font-size: 13px; }
+.nf-path { overflow-wrap: anywhere; margin: 0; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text-body); font-family: monospace; font-size: 13px; }
 .nf-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .nf-actions .button-primary, .nf-secondary { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; padding: 0 18px; border-radius: 12px; font-weight: 700; text-decoration: none; }
-.nf-secondary { border: 1px solid #cfe2d5; color: #2f6b4f; }
+.nf-secondary { border: 1px solid var(--border); color: var(--brand-mid); }
 </style>

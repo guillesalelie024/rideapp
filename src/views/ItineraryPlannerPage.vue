@@ -148,17 +148,13 @@ function hasValidTravelerCount(): boolean {
 }
 
 function selectTransportation(mode: string) {
-  if (hasUnverifiedStops.value) {
-    showError('Transportation routes are unavailable while the itinerary includes places without verified route details.');
-    transportPickerOpen.value = false;
-    return;
-  }
   const option = transportationModes.find((item) => item.id === mode);
   if (!option) return;
+  const verifiedStops = itinerary.value.stopIds.filter((id) => places.some((place) => place.id === id));
   selectedRoute.value = {
     mode: option.id,
-    fromId: itinerary.value.stopIds[0] ?? '',
-    toId: itinerary.value.stopIds.at(-1) ?? '',
+    fromId: verifiedStops[0] ?? '',
+    toId: verifiedStops.at(-1) ?? '',
     fareReference: 'Confirm fare with the operator',
     travelTime: 'Varies by route',
   };
@@ -235,7 +231,7 @@ function saveTrip() {
     localStorage.setItem(SAVED_TRIP_ID_KEY, savedRecord.id);
     if (selectedRoute.value) localStorage.setItem(`${SAVED_ITINERARY_KEY}.route`, JSON.stringify(selectedRoute.value));
     savedSuccessfully.value = true;
-    showSuccess('Itinerary saved to Trips.');
+    showSuccess('Your itinerary has been saved to My Trips on this device.', 'Itinerary Saved');
   } catch {
     showError('Could not save itinerary.');
   }
@@ -291,6 +287,22 @@ watch(() => route.query.place, (queryPlace) => {
 
 watch(itinerary, () => {
   savedSuccessfully.value = false;
+  if (selectedRoute.value) {
+    const verifiedStops = itinerary.value.stopIds.filter((id) => places.some((place) => place.id === id));
+    const nextRoute = {
+      ...selectedRoute.value,
+      fromId: verifiedStops[0] ?? '',
+      toId: verifiedStops.at(-1) ?? '',
+    };
+    if (nextRoute.fromId !== selectedRoute.value.fromId || nextRoute.toId !== selectedRoute.value.toId) {
+      selectedRoute.value = nextRoute;
+      try {
+        localStorage.setItem(`${ITINERARY_DRAFT_KEY}.route`, JSON.stringify(nextRoute));
+      } catch {
+        showError('Transportation choice could not be updated.');
+      }
+    }
+  }
   persistDraft();
 }, { deep: true });
 
@@ -308,7 +320,7 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
           show-back
         />
 
-        <div class="plan-content">
+        <div class="plan-content desktop-content ride-content">
           <section v-if="curatedPlanFocus" class="plan-section">
             <div class="plan-focus-card">
               <span class="plan-focus-label">Planning around</span>
@@ -389,7 +401,6 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
               <button
                 class="plan-note-save-inline plan-route-change"
                 type="button"
-                :disabled="(!transportPickerOpen && itineraryPlaces.length === 0) || hasUnverifiedStops"
                 @click="transportPickerOpen = !transportPickerOpen"
               >
                 {{ transportPickerOpen ? 'Cancel' : selectedRoute ? 'Change' : 'Choose' }}
@@ -531,12 +542,12 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 <style scoped>
 .plan-app {
   min-height: 100vh;
-  background: #ffffff;
-  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
 .plan-header {
-  background: linear-gradient(135deg, #E8F4EC 0%, #F2F8F3 100%);
+  background: linear-gradient(135deg, var(--brand-soft) 0%, var(--surface-soft) 100%);
   padding: calc(env(safe-area-inset-top) + 12px) 16px 22px 16px;
   border-bottom-left-radius: 26px;
   border-bottom-right-radius: 26px;
@@ -573,15 +584,15 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
   width: 42px;
   height: 42px;
   border-radius: 14px;
-  background: white;
-  border: 1px solid #DCE9DF;
+  background: var(--surface);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 24px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(63, 128, 100, 0.06);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--brand-accent) 0.06, transparent);
 }
 
 .plan-header-greet {
@@ -591,48 +602,48 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 }
 
 .plan-greet-line {
-  color: #3F8064;
+  color: var(--brand-accent);
   font-weight: 600;
   margin: 0;
   font-size: 14px;
 }
 
 .plan-greet-title {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 24px;
   font-weight: 700;
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   line-height: 1.15;
 }
 
 .plan-greet-sub {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
   margin: 0;
 }
 
 .plan-content {
-  padding: 16px;
+  padding: 18px 18px 0;
   max-width: 100%;
 }
 
 .plan-section {
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .plan-focus-card {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 14px;
-  border: 1px solid #DCE9DF;
-  border-radius: 16px;
-  background: #F2F8F3;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface-soft);
 }
 
 .plan-focus-label {
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -640,18 +651,18 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 }
 
 .plan-focus-card strong {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 16px;
 }
 
 .plan-focus-card > span:not(.plan-focus-label) {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .plan-focus-card p {
   margin: 4px 0 0;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -664,29 +675,30 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 }
 
 .plan-section-title {
-  color: #174C40;
-  font-size: 17px;
-  font-weight: 700;
+  color: var(--text-strong);
+  font-size: 21px;
+  font-weight: 600;
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 .plan-count {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .plan-card {
-  background: white;
-  border: 1px solid #DCE9DF;
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 2px 8px rgba(63, 128, 100, 0.04);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 .plan-stop-picker-hint {
   margin: 0 0 10px;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -699,9 +711,10 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 
 .plan-category-group {
   overflow: hidden;
-  border: 1px solid #DCE9DF;
-  border-radius: 14px;
-  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
 }
 
 .plan-category-group > summary {
@@ -710,7 +723,7 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
   justify-content: space-between;
   gap: 10px;
   padding: 12px 14px;
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -723,7 +736,7 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 
 .plan-category-group > summary::after {
   content: '+';
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 18px;
 }
 
@@ -733,19 +746,20 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 
 .plan-category-count {
   margin-left: auto;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
-  background: #E8F4EC;
-  color: #3F8064;
+  background: var(--brand-soft);
+  color: var(--brand);
   font-size: 11px;
+  font-weight: 600;
 }
 
 .plan-place-option {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 11px 14px;
-  border-top: 1px solid #EEF4EF;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
   cursor: pointer;
 }
 
@@ -754,7 +768,7 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
   height: 18px;
   flex: 0 0 18px;
   margin: 1px 0 0;
-  accent-color: #3F8064;
+  accent-color: var(--brand);
 }
 
 .plan-place-option-copy {
@@ -764,14 +778,14 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 }
 
 .plan-place-option-copy strong {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
 }
 
 .plan-place-option-copy small {
-  color: #7A5818;
+  color: var(--warning);
   font-size: 11px;
   line-height: 1.4;
 }
@@ -780,27 +794,27 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
   margin: 10px 0;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #FFF7E6;
-  color: #7A5818;
+  background: var(--warning-soft);
+  color: var(--warning);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .plan-select {
   width: 100%;
-  padding: 11px 12px;
-  border: 1px solid #DCE9DF;
-  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
   font-size: 13px;
-  color: #174C40;
-  background: white;
+  color: var(--text-strong);
+  background: var(--surface);
 }
 
 .plan-add-btn {
   width: 100%;
   padding: 11px 16px;
-  background: #3F8064;
-  color: white;
+  background: var(--brand);
+  color: var(--on-brand);
   border: none;
   border-radius: 12px;
   font-weight: 600;
@@ -823,7 +837,7 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 
 .plan-label {
   display: block;
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 6px;
@@ -831,11 +845,20 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 
 .plan-input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #DCE9DF;
-  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
   font-size: 14px;
-  color: #174C40;
+  color: var(--text-strong);
+  background: var(--surface);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.plan-input:focus,
+.plan-select:focus {
+  outline: none;
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-accent) 18%, transparent);
 }
 
 .plan-row {
@@ -870,8 +893,8 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3F8064 0%, #2d5f4a 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+  color: var(--on-brand);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -883,19 +906,19 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 .plan-timeline-line {
   width: 2px;
   flex: 1;
-  background: linear-gradient(to bottom, #3F8064 0%, #DCE9DF 100%);
+  background: linear-gradient(to bottom, var(--brand) 0%, var(--border) 100%);
   margin: 4px 0;
   min-height: 24px;
 }
 
 .plan-timeline-card {
   flex: 1;
-  background: white;
-  border: 1px solid #DCE9DF;
-  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
   margin-bottom: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(63, 128, 100, 0.03);
+  box-shadow: var(--shadow-sm);
 }
 
 .plan-timeline-card-header {
@@ -911,14 +934,14 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 }
 
 .plan-timeline-info strong {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 14px;
   display: block;
   word-break: break-word;
 }
 
 .plan-timeline-info p {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
   margin: 2px 0 0 0;
 }
@@ -933,12 +956,12 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: white;
-  border: 1px solid #DCE9DF;
+  background: var(--surface);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3F8064;
+  color: var(--brand-accent);
   cursor: pointer;
   padding: 0;
 }
@@ -948,13 +971,13 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 }
 
 .plan-timeline-remove {
-  color: #DC2626;
+  color: var(--danger);
 }
 
 .plan-timeline-note {
-  border-top: 1px solid #F2F8F3;
-  padding: 8px 12px 12px 12px;
-  background: #F9FBFA;
+  border-top: 1px solid var(--border);
+  padding: 10px 12px 12px 12px;
+  background: var(--surface-soft);
 }
 
 .plan-note-header {
@@ -965,7 +988,7 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 }
 
 .plan-note-label {
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -974,21 +997,22 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 
 .plan-note-input {
   width: 100%;
-  border: 1px solid #DCE9DF;
-  border-radius: 10px;
-  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
   font-size: 13px;
-  color: #174C40;
+  color: var(--text-strong);
+  background: var(--surface);
   font-family: inherit;
   resize: none;
 }
 
 .plan-note-save-inline {
-  background: white;
-  color: #3F8064;
-  border: 1px solid #DCE9DF;
-  padding: 4px 10px;
-  border-radius: 8px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  border: 1px solid transparent;
+  padding: 5px 12px;
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -997,12 +1021,12 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 .plan-empty {
   text-align: center;
   padding: 24px;
-  color: #658078;
+  color: var(--text-secondary);
 }
 
 .plan-empty ion-icon {
   font-size: 40px;
-  color: #DCE9DF;
+  color: var(--border);
 }
 
 .plan-actions-row {
@@ -1017,24 +1041,25 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 13px;
+  border-radius: 16px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   border: none;
-  min-height: 48px;
+  min-height: 50px;
 }
 
 .plan-btn-route {
-  background: white;
-  color: #3F8064;
-  border: 1.5px solid #3F8064;
+  background: var(--surface);
+  color: var(--brand);
+  border: 1.5px solid var(--brand-accent);
 }
 
 .plan-btn-save {
-  background: #3F8064;
-  color: white;
+  background: var(--brand);
+  color: var(--on-brand);
+  box-shadow: var(--shadow-sm);
 }
 
 .plan-big-btn:disabled {
@@ -1043,7 +1068,7 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
 
 .plan-saved-note {
   text-align: center;
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 13px;
   font-weight: 600;
   margin: 10px 0 0 0;
@@ -1054,24 +1079,25 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px;
-  border: 1px solid #DCE9DF;
-  border-radius: 14px;
-  background: #F7FBF8;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
 }
 
-.plan-transport-icon { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 12px; background: #E8F4EC; color: #3F8064; font-size: 22px; }
+.plan-transport-icon { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border-radius: 14px; background: var(--brand-soft); color: var(--brand); font-size: 22px; }
 .plan-route-copy { display: grid; min-width: 0; flex: 1; gap: 4px; }
 .plan-route-copy .plan-note-label { margin: 0; }
-.plan-route-copy strong { color: #174C40; text-transform: capitalize; }
-.plan-route-copy > span { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; color: #658078; font-size: 12px; line-height: 1.5; }
+.plan-route-copy strong { color: var(--text-strong); text-transform: capitalize; }
+.plan-route-copy > span { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
 .plan-route-copy > span ion-icon { transform: rotate(270deg); }
 .plan-transport-picker { display: grid; width: min(100%, 320px); min-width: 0; flex: 0 1 320px; gap: 6px; }
 .plan-transport-picker .plan-select { width: 100%; min-width: 0; margin: 0; }
 .plan-route-change { flex: 0 0 auto; }
 .plan-route-change:disabled { cursor: not-allowed; opacity: 0.5; }
 
-.plan-btn-live { margin-top: 10px; background: #174C40; color: white; }
+.plan-btn-live { margin-top: 10px; background: var(--brand-deep); color: var(--on-brand); }
 
 .plan-spacer {
   height: 8px;

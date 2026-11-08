@@ -91,7 +91,7 @@ describe('AuthScenery.vue', () => {
     expect(wrapper.text()).toContain('Saved Trails');
     expect(wrapper.text()).toContain('Active Bookings');
     expect(wrapper.text()).toContain('Trip Stats');
-    expect(wrapper.find('.auth-scenery-art').attributes('src')).toContain('auth-road-scene.svg');
+    expect(wrapper.find('.auth-scenery-art').attributes('src')).toContain('calapan-nature-park.png');
     expect(wrapper.find('.auth-brand-lockup').exists()).toBe(false);
   });
 
@@ -104,6 +104,16 @@ describe('AuthScenery.vue', () => {
     expect(wrapper.text()).toContain('Curated Routes');
     expect(wrapper.text()).toContain('Instant Vehicle Rentals');
     expect(wrapper.text()).toContain('Rider Community');
+  });
+
+  test('supports account recovery with calm, secure guidance', () => {
+    const wrapper = mount(AuthScenery, { props: { variant: 'recovery' } });
+
+    expect(wrapper.text()).toContain('Return to the Journey');
+    expect(wrapper.text()).toContain('Secure Recovery');
+    expect(wrapper.text()).toContain('Fresh Access');
+    expect(wrapper.text()).toContain('Back on Route');
+    expect(wrapper.findAll('.auth-scenery-features li')).toHaveLength(3);
   });
 });
 

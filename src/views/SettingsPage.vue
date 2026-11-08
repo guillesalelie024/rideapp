@@ -3,9 +3,20 @@ import { computed, ref } from 'vue';
 import { IonContent, IonIcon, IonPage, onIonViewWillEnter } from '@ionic/vue';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { notificationsOutline, shieldCheckmarkOutline } from 'ionicons/icons';
+import {
+  chevronForwardOutline,
+  documentTextOutline,
+  informationCircleOutline,
+  lockClosedOutline,
+  moonOutline,
+  notificationsOutline,
+  phonePortraitOutline,
+  shieldCheckmarkOutline,
+  sunnyOutline,
+} from 'ionicons/icons';
 import RideBottomNav from '../components/RideBottomNav.vue';
 import RideAppHeader from '../components/RideAppHeader.vue';
+import { getThemeMode, setThemeMode, type ThemeMode } from '../composables/theme';
 import {
   ALERT_DISTANCE_OPTIONS,
   isAlertDistance,
@@ -27,6 +38,19 @@ const settings = ref<AlertSettings>(loadAlertSettings());
 const saving = ref(false);
 const permissionState = ref<PermissionState>('prompt');
 const permissionCheckError = ref('');
+const themeMode = ref<ThemeMode>(getThemeMode());
+
+const appearanceOptions: Array<{ value: ThemeMode; label: string; description: string; icon: string }> = [
+  { value: 'light', label: 'Light', description: 'Bright, airy forest tones.', icon: sunnyOutline },
+  { value: 'dark', label: 'Dark', description: 'Easy on the eyes at night.', icon: moonOutline },
+  { value: 'system', label: 'System', description: 'Match your device setting.', icon: phonePortraitOutline },
+];
+
+function onThemeChange(next: ThemeMode) {
+  themeMode.value = next;
+  setThemeMode(next);
+  showSuccess(`Appearance set to ${next === 'system' ? 'system default' : next}.`);
+}
 
 const permissionText = computed(() => {
   if (permissionCheckError.value) return permissionCheckError.value;
@@ -95,6 +119,7 @@ async function ensureNotificationPermission(): Promise<boolean> {
 
 onIonViewWillEnter(() => {
   settings.value = loadAlertSettings();
+  themeMode.value = getThemeMode();
   void refreshPermission();
 });
 
@@ -153,12 +178,42 @@ function onDistanceChange(event: Event) {
       <div class="st-app">
         <RideAppHeader
           eyebrow="Settings"
-          title="Trip Alerts"
-          subtitle="Control how RIDE notifies you while a live trip is running."
+          title="Make RIDE yours"
+          subtitle="Manage appearance, trip alerts, and account preferences."
           show-back
         />
 
-        <main class="st-content">
+        <main class="st-content desktop-content ride-content">
+          <section class="st-card" aria-labelledby="appearance-title">
+            <div class="st-card-head">
+              <span class="st-card-icon st-card-icon-accent" aria-hidden="true"><ion-icon :icon="sunnyOutline"></ion-icon></span>
+              <div>
+                <h2 id="appearance-title">Appearance</h2>
+                <p>Choose how RIDE looks across every screen.</p>
+              </div>
+            </div>
+
+            <div class="st-theme-grid" role="radiogroup" aria-label="Appearance">
+              <button
+                v-for="option in appearanceOptions"
+                :key="option.value"
+                type="button"
+                class="st-theme-option"
+                :class="{ 'is-active': themeMode === option.value }"
+                role="radio"
+                :aria-checked="themeMode === option.value"
+                @click="onThemeChange(option.value)"
+              >
+                <span class="st-theme-icon" aria-hidden="true"><ion-icon :icon="option.icon"></ion-icon></span>
+                <span class="st-theme-copy">
+                  <strong>{{ option.label }}</strong>
+                  <small>{{ option.description }}</small>
+                </span>
+                <span class="st-theme-dot" aria-hidden="true"></span>
+              </button>
+            </div>
+          </section>
+
           <section class="st-card" aria-labelledby="get-off-alert-title">
             <div class="st-card-head">
               <span class="st-card-icon" aria-hidden="true"><ion-icon :icon="notificationsOutline"></ion-icon></span>
@@ -202,6 +257,38 @@ function onDistanceChange(event: Event) {
             </ul>
           </section>
 
+          <section class="st-card st-links-card" aria-labelledby="st-links-title">
+            <div class="st-card-head">
+              <span class="st-card-icon" aria-hidden="true"><ion-icon :icon="shieldCheckmarkOutline"></ion-icon></span>
+              <div>
+                <h2 id="st-links-title">Privacy &amp; security</h2>
+                <p>Review how RIDE protects your data and your account.</p>
+              </div>
+            </div>
+            <nav class="st-links" aria-label="Privacy and security links">
+              <router-link to="/security" class="st-link">
+                <span class="st-link-icon" aria-hidden="true"><ion-icon :icon="lockClosedOutline"></ion-icon></span>
+                <span class="st-link-copy"><strong>Security</strong><small>Password and account protection</small></span>
+                <ion-icon :icon="chevronForwardOutline" aria-hidden="true"></ion-icon>
+              </router-link>
+              <router-link to="/privacy" class="st-link">
+                <span class="st-link-icon" aria-hidden="true"><ion-icon :icon="shieldCheckmarkOutline"></ion-icon></span>
+                <span class="st-link-copy"><strong>Privacy Policy</strong><small>How your data is handled</small></span>
+                <ion-icon :icon="chevronForwardOutline" aria-hidden="true"></ion-icon>
+              </router-link>
+              <router-link to="/terms" class="st-link">
+                <span class="st-link-icon" aria-hidden="true"><ion-icon :icon="documentTextOutline"></ion-icon></span>
+                <span class="st-link-copy"><strong>Terms of Service</strong><small>Rules for using RIDE</small></span>
+                <ion-icon :icon="chevronForwardOutline" aria-hidden="true"></ion-icon>
+              </router-link>
+              <router-link to="/about" class="st-link">
+                <span class="st-link-icon" aria-hidden="true"><ion-icon :icon="informationCircleOutline"></ion-icon></span>
+                <span class="st-link-copy"><strong>About RIDE</strong><small>Our story and mission</small></span>
+                <ion-icon :icon="chevronForwardOutline" aria-hidden="true"></ion-icon>
+              </router-link>
+            </nav>
+          </section>
+
           <p class="st-auto-save">
             <ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true"></ion-icon>
             <span>Changes are saved automatically on this device.</span>
@@ -217,13 +304,13 @@ function onDistanceChange(event: Event) {
 <style scoped>
 .st-app {
   min-height: 100vh;
-  background: #ffffff;
-  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
 .st-header {
   padding: calc(env(safe-area-inset-top) + 12px) 16px 24px;
-  background: linear-gradient(135deg, #e8f4ec 0%, #f2f8f3 100%);
+  background: linear-gradient(135deg, var(--brand-soft) 0%, var(--surface-soft) 100%);
   border-bottom-left-radius: 28px;
   border-bottom-right-radius: 28px;
 }
@@ -255,13 +342,13 @@ function onDistanceChange(event: Event) {
   justify-content: center;
   width: 42px;
   height: 42px;
-  border: 1px solid #dce9df;
+  border: 1px solid var(--border);
   border-radius: 14px;
-  background: #ffffff;
-  color: #3f8064;
+  background: var(--surface);
+  color: var(--brand-accent);
   font-size: 22px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(63, 128, 100, 0.06);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--brand-accent) 0.06, transparent);
 }
 
 .st-header-copy {
@@ -271,7 +358,7 @@ function onDistanceChange(event: Event) {
 
 .st-eyebrow {
   margin: 0;
-  color: #3f8064;
+  color: var(--brand-accent);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -280,8 +367,8 @@ function onDistanceChange(event: Event) {
 
 .st-title {
   margin: 0;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-family: var(--font-body);
   font-size: 26px;
   font-weight: 700;
   line-height: 1.15;
@@ -289,7 +376,7 @@ function onDistanceChange(event: Event) {
 
 .st-subtitle {
   margin: 0;
-  color: #5b7566;
+  color: var(--text-body);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -306,10 +393,10 @@ function onDistanceChange(event: Event) {
   display: grid;
   gap: 18px;
   padding: 18px;
-  border: 1px solid #dce9df;
+  border: 1px solid var(--border);
   border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 24px 60px -52px rgba(23, 76, 64, 0.75);
+  background: var(--surface);
+  box-shadow: 0 24px 60px -52px color-mix(in srgb, var(--brand-deep) 0.75, transparent);
 }
 
 .st-card-head {
@@ -325,22 +412,22 @@ function onDistanceChange(event: Event) {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 14px;
-  background: #f2f8f3;
-  color: #3f8064;
+  background: var(--surface-soft);
+  color: var(--brand-accent);
   font-size: 23px;
 }
 
 .st-card-head h2 {
   margin: 0;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-family: var(--font-body);
   font-size: 18px;
   font-weight: 700;
 }
 
 .st-card-head p {
   margin: 4px 0 0;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -351,9 +438,9 @@ function onDistanceChange(event: Event) {
   justify-content: space-between;
   gap: 16px;
   padding: 14px;
-  border: 1px solid #edf5ef;
+  border: 1px solid var(--surface-soft);
   border-radius: 14px;
-  background: #f7fbf8;
+  background: var(--bg);
 }
 
 .st-setting-copy {
@@ -362,12 +449,12 @@ function onDistanceChange(event: Event) {
 }
 
 .st-setting-copy strong {
-  color: #174c40;
+  color: var(--text-strong);
   font-size: 14px;
 }
 
 .st-setting-copy span {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -392,7 +479,7 @@ function onDistanceChange(event: Event) {
   height: 30px;
   padding: 3px;
   border-radius: 999px;
-  background: #d6e2d9;
+  background: var(--border);
   transition: background 160ms ease;
 }
 
@@ -401,13 +488,13 @@ function onDistanceChange(event: Event) {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 2px 6px rgba(23, 76, 64, 0.24);
+  background: var(--surface);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--brand-deep) 0.24, transparent);
   transition: transform 160ms ease;
 }
 
 .st-switch input:checked + .st-switch-track {
-  background: #3f8064;
+  background: var(--brand);
 }
 
 .st-switch input:checked + .st-switch-track .st-switch-thumb {
@@ -415,7 +502,7 @@ function onDistanceChange(event: Event) {
 }
 
 .st-switch input:focus-visible + .st-switch-track {
-  outline: 3px solid rgba(63, 128, 100, 0.35);
+  outline: 3px solid color-mix(in srgb, var(--brand-accent) 0.35, transparent);
   outline-offset: 3px;
 }
 
@@ -427,7 +514,7 @@ function onDistanceChange(event: Event) {
 .st-field {
   display: grid;
   gap: 7px;
-  color: #174c40;
+  color: var(--text-strong);
   font-size: 13px;
   font-weight: 700;
 }
@@ -436,15 +523,15 @@ function onDistanceChange(event: Event) {
   width: 100%;
   min-height: 46px;
   padding: 10px 12px;
-  border: 1px solid #dce9df;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #ffffff;
-  color: #174c40;
+  background: var(--surface);
+  color: var(--text-strong);
   font: inherit;
 }
 
 .st-field small {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 400;
   line-height: 1.4;
@@ -454,20 +541,20 @@ function onDistanceChange(event: Event) {
   margin: 0;
   padding: 11px 13px;
   border-radius: 12px;
-  background: #f7fbf8;
-  color: #5b7566;
+  background: var(--bg);
+  color: var(--text-body);
   font-size: 12px;
   line-height: 1.45;
 }
 
 .st-permission.is-good {
-  background: #e8f4ec;
-  color: #2f6b4f;
+  background: var(--brand-soft);
+  color: var(--brand-mid);
 }
 
 .st-permission.is-bad {
-  background: #fff4ed;
-  color: #9a4c1f;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .st-notes {
@@ -475,7 +562,7 @@ function onDistanceChange(event: Event) {
   gap: 8px;
   margin: 0;
   padding-left: 18px;
-  color: #5b7566;
+  color: var(--text-body);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -486,12 +573,12 @@ function onDistanceChange(event: Event) {
   justify-content: center;
   gap: 7px;
   margin: 0;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .st-auto-save ion-icon {
-  color: #3f8064;
+  color: var(--brand-accent);
   font-size: 16px;
 }
 
@@ -505,5 +592,224 @@ function onDistanceChange(event: Event) {
     padding-left: 22px;
     padding-right: 22px;
   }
+}
+/* ===== Forest Explorer — Settings ===== */
+.st-app {
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
+}
+
+.st-content {
+  gap: 16px;
+  padding-top: 18px;
+}
+
+.st-card {
+  gap: 16px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.st-card-icon {
+  background: var(--brand-soft-2);
+  color: var(--brand-accent);
+}
+
+.st-card-icon-accent {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.st-card-head h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.st-setting-row {
+  border-color: var(--border);
+  background: var(--surface-soft);
+}
+
+.st-switch-thumb {
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.st-field select {
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.st-field select:focus {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-accent) 14%, transparent);
+  outline: none;
+}
+
+.st-permission {
+  background: var(--surface-soft);
+}
+
+.st-permission.is-good {
+  background: var(--brand-soft);
+  color: var(--brand-mid);
+}
+
+.st-permission.is-bad {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+/* Appearance selector */
+.st-theme-grid {
+  display: grid;
+  gap: 9px;
+}
+
+.st-theme-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-body);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.st-theme-option:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.st-theme-option.is-active {
+  border-color: var(--brand-accent);
+  background: var(--brand-soft);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-accent) 12%, transparent);
+}
+
+.st-theme-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--brand-accent);
+  font-size: 21px;
+  box-shadow: var(--shadow-xs);
+}
+
+.st-theme-option.is-active .st-theme-icon {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.st-theme-copy {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+}
+
+.st-theme-copy strong {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.st-theme-copy small {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.st-theme-dot {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.st-theme-option.is-active .st-theme-dot {
+  border-color: var(--brand);
+  background: radial-gradient(circle, var(--brand) 0 45%, transparent 48%);
+}
+
+/* Privacy and security links */
+.st-links-card {
+  gap: 14px;
+}
+
+.st-links {
+  display: grid;
+  gap: 4px;
+}
+
+.st-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-body);
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+
+.st-link:hover {
+  background: var(--surface-soft);
+}
+
+.st-link + .st-link {
+  border-top: 1px solid var(--border);
+}
+
+.st-link-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--brand-soft-2);
+  color: var(--brand-accent);
+  font-size: 19px;
+}
+
+.st-link-copy {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+}
+
+.st-link-copy strong {
+  color: var(--text-strong);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.st-link-copy small {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+}
+
+.st-link > ion-icon {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 17px;
+}
+
+.st-auto-save {
+  margin-top: 4px;
+  margin-bottom: 8px;
 }
 </style>

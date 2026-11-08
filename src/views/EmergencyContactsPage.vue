@@ -96,7 +96,7 @@ onMounted(loadContacts);
           subtitle="Keep important phone numbers easy to find during a trip."
           show-back
         />
-        <main class="ec-content">
+        <main class="ec-content desktop-content ride-content">
           <section class="ec-notice" aria-label="Important information">
             <strong>For emergencies</strong>
             <p>These contacts are saved only on this device. RIDE does not call or notify them automatically.</p>
@@ -165,29 +165,29 @@ onMounted(loadContacts);
 </template>
 
 <style scoped>
-.ec-page { min-height: 100vh; padding-bottom: calc(84px + env(safe-area-inset-bottom)); background: #fff; }
+.ec-page { min-height: 100vh; padding-bottom: calc(104px + env(safe-area-inset-bottom)); background: var(--bg); }
 .ec-content { display: grid; gap: 18px; width: min(100%, 760px); margin: 0 auto; padding: 18px 16px 28px; }
-.ec-notice { padding: 16px; border: 1px solid #dce9df; border-radius: 16px; background: #f2f8f3; color: #174c40; }
+.ec-notice { padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-soft); color: var(--text-strong); }
 .ec-notice strong { font-size: 15px; }
-.ec-notice p { margin: 6px 0 0; color: #526b60; font-size: 13px; line-height: 1.5; }
-.ec-card, .ec-list-section { padding: 18px; border: 1px solid #dce9df; border-radius: 18px; background: #fff; box-shadow: 0 4px 16px rgb(23 76 64 / 5%); }
-.ec-card h2, .ec-list-heading h2 { margin: 0; color: #174c40; font-size: 18px; }
+.ec-notice p { margin: 6px 0 0; color: var(--text-body); font-size: 13px; line-height: 1.5; }
+.ec-card, .ec-list-section { padding: 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: 0 4px 16px rgb(23 76 64 / 5%); }
+.ec-card h2, .ec-list-heading h2 { margin: 0; color: var(--text-strong); font-size: 18px; }
 .ec-form { display: grid; gap: 14px; margin-top: 16px; }
-.ec-form label { display: grid; gap: 6px; color: #345b4c; font-size: 13px; font-weight: 600; }
-.ec-form label small { color: #658078; font-weight: 400; }
-.ec-form input { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #ceded3; border-radius: 11px; color: #174c40; font: inherit; }
-.ec-form input:focus { outline: 2px solid #3f8064; outline-offset: 1px; }
-.ec-error { color: #a11d1d !important; }
-.ec-primary-button { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: #3f8064; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+.ec-form label { display: grid; gap: 6px; color: var(--text-body); font-size: 13px; font-weight: 600; }
+.ec-form label small { color: var(--text-secondary); font-weight: 400; }
+.ec-form input { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 11px; color: var(--text-strong); font: inherit; }
+.ec-form input:focus { outline: 2px solid var(--brand-accent); outline-offset: 1px; }
+.ec-error { color: var(--danger) !important; }
+.ec-primary-button { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: var(--brand); color: var(--on-brand); font: inherit; font-weight: 700; cursor: pointer; }
 .ec-list-section { display: grid; gap: 12px; }
 .ec-list-heading { display: flex; align-items: center; justify-content: space-between; }
-.ec-list-heading span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #f2f8f3; color: #3f8064; font-size: 12px; font-weight: 700; }
-.ec-empty { margin: 0; color: #658078; font-size: 14px; }
-.ec-contact { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px; border: 1px solid #e4eee7; border-radius: 13px; }
-.ec-contact-copy { display: grid; min-width: 0; gap: 4px; color: #174c40; }
+.ec-list-heading span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: var(--surface-soft); color: var(--brand-accent); font-size: 12px; font-weight: 700; }
+.ec-empty { margin: 0; color: var(--text-secondary); font-size: 14px; }
+.ec-contact { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px; border: 1px solid var(--border); border-radius: 13px; }
+.ec-contact-copy { display: grid; min-width: 0; gap: 4px; color: var(--text-strong); }
 .ec-contact-copy strong { overflow-wrap: anywhere; }
-.ec-contact-copy span { color: #658078; font-size: 12px; }
-.ec-contact-copy a { display: inline-flex; align-items: center; gap: 6px; color: #3f8064; font-size: 14px; text-decoration: none; }
-.ec-remove-button { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 11px; background: #fdf0ef; color: #a11d1d; font-size: 21px; cursor: pointer; }
+.ec-contact-copy span { color: var(--text-secondary); font-size: 12px; }
+.ec-contact-copy a { display: inline-flex; align-items: center; gap: 6px; color: var(--brand-accent); font-size: 14px; text-decoration: none; }
+.ec-remove-button { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 11px; background: var(--danger-soft); color: var(--danger); font-size: 21px; cursor: pointer; }
 @media (min-width: 600px) { .ec-content { padding-right: 24px; padding-left: 24px; } }
 </style>

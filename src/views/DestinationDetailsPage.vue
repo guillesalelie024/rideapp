@@ -14,6 +14,7 @@ import {
   mapOutline,
   navigateOutline,
   restaurantOutline,
+  timeOutline,
   waterOutline,
 } from 'ionicons/icons';
 import { useRoute, useRouter } from 'vue-router';
@@ -24,18 +25,21 @@ import { getRideDestination, getRideDestinations, type RideDestination } from '.
 import { getCuratedNearbyFood } from '../data/curatedNearbyPlaces';
 import { completePlanningStep, ensureDraftTripId } from '../data/flowProgress';
 import { showError, showSuccess } from '../composables/feedback';
-import { getExploreListingLocation } from '../data/exploreListings';
+import { getExploreListingId, getExploreListingLocation } from '../data/exploreListings';
+
+const CALAPAN_CENTER = { latitude: 13.4147715, longitude: 121.1803193 };
 
 const route = useRoute();
 const router = useRouter();
 const places = getRideDestinations();
 const selectedPlace = computed(() => getRideDestination(String(route.params.id)));
 const curatedListing = computed(() => {
-  const { name, category, note } = route.query;
+  const { name, category, note, address } = route.query;
   if (typeof name !== 'string' || typeof category !== 'string') return null;
   return {
     name,
     category,
+    address: typeof address === 'string' ? address : '',
     note: typeof note === 'string' ? note : '',
   };
 });
@@ -49,6 +53,39 @@ const curatedNearbyFood = computed(() =>
 const curatedListingLocation = computed(() => curatedListing.value
   ? getExploreListingLocation(curatedListing.value, curatedListing.value.category)
   : null);
+const curatedListingAbout = computed(() => {
+  const note = curatedListing.value?.note?.trim();
+  const address = curatedListing.value?.address?.trim();
+  if (note) return note;
+  if (address) return 'No additional description available yet.';
+  return '';
+});
+
+function estimateTravelMinutes(km: number): number {
+  if (km <= 0.2) return 2;
+  return Math.max(3, Math.round((km / 22) * 60 + 4));
+}
+
+function formatDistanceKm(km: number): string {
+  if (km < 1) return `${Math.max(50, Math.round(km * 100) * 10)} m`;
+  return `${km.toFixed(km < 10 ? 1 : 0)} km`;
+}
+
+const distanceFromCenter = computed(() => {
+  const place = selectedPlace.value;
+  if (place) return getDistanceInKilometers(CALAPAN_CENTER.latitude, CALAPAN_CENTER.longitude, place);
+  const listing = curatedListing.value;
+  if (!listing) return null;
+  const known = getRideDestination(getExploreListingId(listing.name, listing.category));
+  if (known) return getDistanceInKilometers(CALAPAN_CENTER.latitude, CALAPAN_CENTER.longitude, known);
+  return null;
+});
+
+const distanceLabel = computed(() => {
+  const km = distanceFromCenter.value;
+  if (km == null) return 'Distance not available (no verified map coordinates yet)';
+  return `${formatDistanceKm(km)} · ~${estimateTravelMinutes(km)} min from Calapan City center`;
+});
 
 interface NearbyRestaurant {
   place: RideDestination;
@@ -214,7 +251,7 @@ function curatedMapSearchUrl() {
           show-back
         />
 
-        <div class="dest-content" v-if="selectedPlace">
+        <div class="dest-content desktop-content ride-content" v-if="selectedPlace">
           <section class="dest-hero">
             <img v-if="placeImage" :src="placeImage" :alt="selectedPlace.imageAlt || selectedPlace.name" @error="imageFailed = true" />
             <div v-else class="dest-hero-fallback">
@@ -232,6 +269,13 @@ function curatedMapSearchUrl() {
                 <div>
                   <span class="dest-info-label">Address</span>
                   <p class="dest-info-value">{{ selectedPlace.address }}</p>
+                </div>
+              </div>
+              <div class="dest-info-row">
+                <ion-icon :icon="timeOutline"></ion-icon>
+                <div>
+                  <span class="dest-info-label">Distance</span>
+                  <p class="dest-info-value">{{ distanceLabel }}</p>
                 </div>
               </div>
               <div class="dest-info-row">
@@ -369,7 +413,7 @@ function curatedMapSearchUrl() {
           <div class="dest-spacer"></div>
         </div>
 
-        <div class="dest-content" v-else-if="curatedListing">
+        <div class="dest-content desktop-content ride-content" v-else-if="curatedListing">
           <section class="dest-hero">
             <div class="dest-hero-fallback">
               <ion-icon :icon="categoryIcon"></ion-icon>
@@ -389,6 +433,13 @@ function curatedMapSearchUrl() {
                 </div>
               </div>
               <div class="dest-info-row">
+                <ion-icon :icon="timeOutline"></ion-icon>
+                <div>
+                  <span class="dest-info-label">Distance</span>
+                  <p class="dest-info-value">{{ distanceLabel }}</p>
+                </div>
+              </div>
+              <div class="dest-info-row">
                 <ion-icon :icon="compassOutline"></ion-icon>
                 <div>
                   <span class="dest-info-label">Category</span>
@@ -401,13 +452,13 @@ function curatedMapSearchUrl() {
           <section class="dest-section">
             <div class="dest-about-card">
               <h3 class="dest-subtitle">About</h3>
-              <p class="dest-description">
+              <p v-if="curatedListingAbout" class="dest-description">{{ curatedListingAbout }}</p>
+              <p v-else class="dest-description">
                 This place is included in the RIDE guide. Verified address, description, and map coordinates are not available yet.
               </p>
               <div class="dest-tags">
                 <span class="dest-tag">{{ curatedListing.category }}</span>
               </div>
-              <p v-if="curatedListing.note" class="dest-about-note">{{ curatedListing.note }}</p>
             </div>
           </section>
 
@@ -473,7 +524,7 @@ function curatedMapSearchUrl() {
           <div class="dest-spacer"></div>
         </div>
 
-        <div class="dest-content" v-else>
+        <div class="dest-content desktop-content ride-content" v-else>
           <section class="dest-empty">
             <ion-icon :icon="compassOutline"></ion-icon>
             <h2>Destination not found</h2>
@@ -491,12 +542,12 @@ function curatedMapSearchUrl() {
 <style scoped>
 .dest-app {
   min-height: 100vh;
-  background: #ffffff;
-  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
 .dest-header {
-  background: linear-gradient(135deg, #E8F4EC 0%, #F2F8F3 100%);
+  background: linear-gradient(135deg, var(--brand-soft) 0%, var(--surface-soft) 100%);
   padding: calc(env(safe-area-inset-top) + 12px) 16px 22px 16px;
   border-bottom-left-radius: 26px;
   border-bottom-right-radius: 26px;
@@ -533,15 +584,15 @@ function curatedMapSearchUrl() {
   width: 42px;
   height: 42px;
   border-radius: 14px;
-  background: white;
-  border: 1px solid #DCE9DF;
+  background: var(--surface);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 24px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(63, 128, 100, 0.06);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--brand-accent) 0.06, transparent);
 }
 
 .dest-header-greet {
@@ -551,40 +602,41 @@ function curatedMapSearchUrl() {
 }
 
 .dest-greet-line {
-  color: #3F8064;
+  color: var(--brand-accent);
   font-weight: 600;
   margin: 0;
   font-size: 14px;
 }
 
 .dest-greet-title {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 24px;
   font-weight: 700;
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   line-height: 1.15;
 }
 
 .dest-greet-sub {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
   margin: 0;
 }
 
 .dest-content {
-  padding: 16px;
+  padding: 18px 18px 0;
   max-width: 100%;
 }
 
 .dest-hero {
   position: relative;
   width: 100%;
-  height: 220px;
-  border-radius: 18px;
+  height: 240px;
+  border-radius: 26px;
   overflow: hidden;
-  margin-bottom: 16px;
-  background: #E8F4EC;
+  margin-bottom: 18px;
+  background: var(--brand-soft);
+  box-shadow: var(--shadow-md);
 }
 
 .dest-hero img {
@@ -599,46 +651,49 @@ function curatedMapSearchUrl() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 64px;
 }
 
 .dest-fav-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 42px;
-  height: 42px;
+  top: 14px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: white;
-  border: 1px solid #DCE9DF;
+  background: var(--surface-glass);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3F8064;
-  font-size: 24px;
+  color: var(--brand-accent);
+  font-size: 23px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .dest-section {
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .dest-info-card {
-  background: white;
-  border: 1px solid #DCE9DF;
-  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
   overflow: hidden;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-xs);
 }
 
 .dest-info-row {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #F2F8F3;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
 }
 
 .dest-info-row:last-child {
@@ -646,34 +701,35 @@ function curatedMapSearchUrl() {
 }
 
 .dest-info-row ion-icon {
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 22px;
   margin-top: 2px;
 }
 
 .dest-info-label {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .dest-info-value {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 14px;
   margin: 2px 0 0 0;
 }
 
 .dest-subtitle {
-  color: #174C40;
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
+  color: var(--text-strong);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  font-family: var(--font-display);
 }
 
 .dest-about-card {
-  padding: 14px;
-  border: 1px solid #DCE9DF;
-  border-radius: 14px;
-  background: #F8FBF8;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface-soft);
 }
 
 .dest-about-card .dest-description:last-child {
@@ -688,14 +744,14 @@ function curatedMapSearchUrl() {
   margin: 12px 0 0;
   padding: 10px 12px;
   border-radius: 10px;
-  background: #FFF7E6;
-  color: #7A5818;
+  background: var(--warning-soft);
+  color: var(--warning);
   font-size: 13px;
   line-height: 1.5;
 }
 
 .dest-description {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 14px;
   line-height: 1.7;
   margin: 0 0 12px 0;
@@ -709,20 +765,21 @@ function curatedMapSearchUrl() {
 }
 
 .dest-tag {
-  background: #E8F4EC;
-  color: #3F8064;
-  padding: 4px 10px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  padding: 4px 11px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
 }
 
 .dest-section-title {
-  color: #174C40;
-  font-size: 17px;
-  font-weight: 700;
-  margin: 0 0 12px 0;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-size: 21px;
+  font-weight: 600;
+  margin: 0 0 14px 0;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 .dest-eats-heading {
@@ -738,7 +795,7 @@ function curatedMapSearchUrl() {
 }
 
 .dest-eats-subtitle {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.5;
   margin: 0;
@@ -750,17 +807,17 @@ function curatedMapSearchUrl() {
   height: 28px;
   align-items: center;
   justify-content: center;
-  padding: 0 8px;
+  padding: 0 9px;
   border-radius: 999px;
-  background: #E8F4EC;
-  color: #3F8064;
+  background: var(--brand-soft);
+  color: var(--brand);
   font-size: 12px;
   font-weight: 700;
 }
 
 .dest-eats-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .dest-eat-card {
@@ -769,11 +826,12 @@ function curatedMapSearchUrl() {
   min-width: 0;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  border: 1px solid #DCE9DF;
-  border-radius: 16px;
-  background: #FFFFFF;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
   color: inherit;
+  box-shadow: var(--shadow-xs);
   transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
 }
 
@@ -793,13 +851,13 @@ function curatedMapSearchUrl() {
 }
 
 .dest-eat-card:focus-within {
-  outline: 3px solid rgba(63, 128, 100, 0.3);
+  outline: 3px solid color-mix(in srgb, var(--brand-accent) 0.3, transparent);
   outline-offset: 2px;
 }
 
 .dest-eat-card:hover {
-  border-color: #9FC5AC;
-  background: #F8FBF8;
+  border-color: var(--text-muted);
+  background: var(--surface-soft);
 }
 
 .dest-eat-card:active {
@@ -808,14 +866,14 @@ function curatedMapSearchUrl() {
 
 .dest-eat-icon {
   display: flex;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
   align-items: center;
   justify-content: center;
-  border-radius: 13px;
-  background: #E8F4EC;
-  color: #3F8064;
+  border-radius: 14px;
+  background: var(--brand-soft);
+  color: var(--brand);
   font-size: 22px;
 }
 
@@ -828,7 +886,7 @@ function curatedMapSearchUrl() {
 
 .dest-eat-info strong {
   overflow: hidden;
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
@@ -837,7 +895,7 @@ function curatedMapSearchUrl() {
 
 .dest-eat-info span {
   overflow: hidden;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -849,7 +907,7 @@ function curatedMapSearchUrl() {
   align-items: flex-start;
   gap: 5px;
   overflow: visible;
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 11px;
   line-height: 1.4;
   text-overflow: clip;
@@ -873,7 +931,7 @@ function curatedMapSearchUrl() {
 
 .dest-eat-arrow {
   flex: 0 0 auto;
-  color: #7A9B8C;
+  color: var(--text-muted);
   font-size: 18px;
 }
 
@@ -883,7 +941,7 @@ function curatedMapSearchUrl() {
 
 .dest-eat-distance {
   display: block;
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
@@ -893,7 +951,7 @@ function curatedMapSearchUrl() {
 
 .dest-eat-address {
   display: block;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
@@ -904,19 +962,20 @@ function curatedMapSearchUrl() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: #E8F4EC;
-  color: #3F8064;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand);
   font-size: 18px;
   text-decoration: none;
   flex-shrink: 0;
   margin-left: 8px;
+  transition: background var(--transition-fast);
 }
 
 .dest-eat-directions:hover {
-  background: #D1E8DC;
+  background: var(--border);
 }
 
 .dest-eat-directions ion-icon {
@@ -926,7 +985,7 @@ function curatedMapSearchUrl() {
 .dest-actions-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .dest-action-disabled {
@@ -947,28 +1006,35 @@ function curatedMapSearchUrl() {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: white;
-  border: 1px solid #DCE9DF;
-  border-radius: 14px;
-  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 13px 15px;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
   font: inherit;
   text-align: left;
   width: 100%;
+  box-shadow: var(--shadow-xs);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.dest-action-item:active {
+  transform: scale(0.99);
+  background: var(--surface-soft);
 }
 
 .dest-action-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: #E8F4EC;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--brand-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3F8064;
-  font-size: 24px;
+  color: var(--brand);
+  font-size: 23px;
   flex-shrink: 0;
 }
 
@@ -978,18 +1044,18 @@ function curatedMapSearchUrl() {
 }
 
 .dest-action-text strong {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 14px;
   display: block;
 }
 
 .dest-action-text span {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .dest-action-item ion-icon:last-child {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 18px;
 }
 
@@ -1000,22 +1066,22 @@ function curatedMapSearchUrl() {
 
 .dest-empty ion-icon {
   font-size: 48px;
-  color: #DCE9DF;
+  color: var(--border);
 }
 
 .dest-empty h2 {
-  color: #174C40;
+  color: var(--text-strong);
   margin: 12px 0 6px 0;
 }
 
 .dest-empty p {
-  color: #658078;
+  color: var(--text-secondary);
   margin: 0 0 16px 0;
 }
 
 .dest-back-btn {
-  background: #3F8064;
-  color: white;
+  background: var(--brand);
+  color: var(--on-brand);
   border: none;
   padding: 10px 18px;
   border-radius: 12px;

@@ -1,27 +1,629 @@
+/* ============================================================
+   RIDE — FOREST EXPLORER DESIGN SYSTEM
+   Premium, elegant, nature-inspired travel & commute experience.
+   Light and dark appearances share one semantic token contract.
+   ============================================================ */
+
 :root {
+  color-scheme: light;
+
+  /* ---------- Light mode palette (Premium Nature Green) ---------- */
+  --brand: #123D2C;          /* primary — deep forest */
+  --brand-hover: #1B4D38;
+  --brand-deep: #0C2A1D;
+  --brand-mid: #245C43;      /* secondary — emerald forest */
+  --brand-accent: #4F7A57;   /* readable sage for text & icons */
+  --brand-soft: #E7EDDF;     /* soft sage surface */
+  --brand-soft-2: #F0F3E8;
+
+  --accent: #C6A66B;         /* highlight — muted gold */
+  --accent-strong: #A8874A;
+  --accent-soft: #F5EEDD;
+  --warm: #C6A66B;
+  --warm-soft: #F7F2E6;
+
+  /* Palette aliases */
+  --forest: var(--brand);
+  --green: var(--brand-mid);
+  --mint: var(--brand-accent);
+  --beige: var(--warm-soft);
+  --soft-gold: var(--accent);
+  --natural-orange: var(--warm);
   --white: #ffffff;
-  --pastel-green: #E8F4EC;
-  --light-mint: #F2F8F3;
-  --primary-green: #3F8064;
-  --dark-green: #174C40;
-  --border: #DCE9DF;
-  --secondary-text: #658078;
-  --sage: #78a982;
-  --sage-action: #3F8064;
-  --sage-action-hover: #346952;
-  --forest: #174C40;
-  --charcoal: #29332d;
-  --muted: #658078;
-  --muted-foreground: #658078;
+  --accent-sage: #789B70;
+  --deep-forest: var(--brand-deep);
+  --mint-green: #8FD0A8;
+  --pale-green: #D6EACC;
 
-  --ion-color-primary: #3F8064;
-  --ion-color-primary-rgb: 63, 128, 100;
-  --ion-color-primary-contrast: #ffffff;
-  --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #367157;
-  --ion-color-primary-tint: #528d73;
+  /* ---------- Surfaces & backgrounds ---------- */
+  --bg: #F5F5EC;
+  --bg-alt: #EDEEE3;
+  --surface: #FFFFFF;
+  --surface-soft: #F0F2E8;
+  --surface-muted: #E6E9DB;
+  --surface-glass: rgba(255, 255, 255, 0.86);
+  --overlay: rgba(18, 61, 44, 0.45);
 
-  --ion-background-color: #ffffff;
-  --ion-text-color: #29332d;
-  --ion-font-family: 'Inter', sans-serif;
+  /* ---------- Borders ---------- */
+  --border: #E3E9DF;
+  --border-strong: #CFD8C7;
+
+  /* ---------- Typography colors ---------- */
+  --text-primary: #172B22;
+  --text-strong: #0F2118;
+  --text-body: #2A3E33;
+  --text-secondary: #5C7263;
+  --text-muted: #8A9A8D;
+  --on-brand: #F5F5EC;
+
+  /* ---------- Status ---------- */
+  --danger: #C0483C;
+  --danger-soft: #FBEBE9;
+  --success: #2F7D5B;
+  --success-soft: #E4F2EA;
+  --warning: #B57E2E;
+  --warning-soft: #FBF1DE;
+  --info: #3B6FA0;
+  --info-soft: #E7F0F8;
+
+  /* ---------- Typography stacks ---------- */
+  --font-display: 'Fraunces', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+
+  /* ---------- Type scale ---------- */
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --leading-none: 1;
+  --leading-tight: 1.14;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tighter: -0.04em;
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.08em;
+  --tracking-wider: 0.14em;
+
+  --measure: 68ch;
+
+  /* ---------- Spacing scale ---------- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  --gutter: clamp(16px, 4vw, 28px);
+  --section-gap: var(--space-8);
+  --stack-gap: var(--space-4);
+
+  /* ---------- Radius scale ---------- */
+  --radius-none: 0;
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
+  --radius-full: 50%;
+  --radius-pill: 999px;
+
+  --button-radius: var(--radius-pill);
+  --input-radius: var(--radius-md);
+  --card-radius: var(--radius-lg);
+  --card-radius-lg: var(--radius-xl);
+  --modal-radius: var(--radius-xl);
+
+  /* ---------- Elevation ---------- */
+  --shadow-xs: 0 1px 2px rgba(27, 67, 50, 0.05);
+  --shadow-sm: 0 2px 8px rgba(27, 67, 50, 0.06);
+  --shadow-md: 0 12px 32px rgba(27, 67, 50, 0.09);
+  --shadow-lg: 0 24px 60px rgba(27, 67, 50, 0.14);
+  --shadow-xl: 0 36px 90px rgba(27, 67, 50, 0.18);
+  --shadow-card: var(--shadow-sm);
+  --shadow-card-hover: var(--shadow-md);
+  --shadow-nav: 0 18px 48px rgba(27, 67, 50, 0.16);
+  --shadow-button: 0 10px 24px color-mix(in srgb, var(--brand) 26%, transparent);
+  --shadow-focus: 0 0 0 4px color-mix(in srgb, var(--brand-accent) 20%, transparent);
+
+  /* ---------- Layout ---------- */
+  --page-max: 1120px;
+  --page-max-narrow: 720px;
+  --page-pad: clamp(16px, 4vw, 28px);
+  --nav-height: 72px;
+  --nav-offset: calc(104px + env(safe-area-inset-bottom));
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --content-max: 860px;
+
+  /* ---------- Component sizing ---------- */
+  --control-height-sm: 36px;
+  --control-height-md: 46px;
+  --control-height-lg: 52px;
+  --button-padding-x: var(--space-6);
+  --card-padding: var(--space-5);
+  --modal-padding: var(--space-6);
+
+  /* ---------- Icons ---------- */
+  --icon-xs: 14px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 28px;
+  --icon-2xl: 34px;
+  --icon-tile-sm: 36px;
+  --icon-tile-md: 44px;
+  --icon-tile-lg: 52px;
+
+  /* ---------- Motion ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --transition-fast: 150ms var(--ease-out);
+  --transition-base: 220ms var(--ease-out);
+  --transition-slow: 360ms var(--ease-out);
+
+  /* ---------- Layering ---------- */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-header: 200;
+  --z-nav: 1000;
+  --z-overlay: 9000;
+  --z-modal: 10000;
+  --z-toast: 11000;
+
+  /* ---------- Legacy aliases kept for existing components ---------- */
+  --pastel-green: var(--brand-soft);
+  --light-mint: var(--surface-soft);
+  --primary-green: var(--brand-accent);
+  --dark-green: var(--brand-deep);
+  --sage: var(--accent-sage);
+  --sage-action: var(--brand);
+  --sage-action-hover: var(--brand-hover);
+  --charcoal: var(--text-primary);
+  --muted: var(--text-secondary);
+  --muted-foreground: var(--text-secondary);
+  --secondary-text: var(--text-secondary);
+  --mist: var(--surface-soft);
+
+  /* ---------- Ionic color bridge ---------- */
+  --ion-font-family: var(--font-body);
+  --ion-background-color: var(--bg);
+  --ion-background-color-rgb: 245, 245, 236;
+  --ion-item-background: var(--surface);
+  --ion-text-color: var(--text-primary);
+  --ion-text-color-rgb: 23, 43, 34;
+  --ion-border-color: var(--border);
+
+  --ion-color-primary: #123D2C;
+  --ion-color-primary-rgb: 18, 61, 44;
+  --ion-color-primary-contrast: #F5F5EC;
+  --ion-color-primary-contrast-rgb: 245, 245, 236;
+  --ion-color-primary-shade: #0C2A1D;
+  --ion-color-primary-tint: #245C43;
+
+  --ion-color-secondary: #245C43;
+  --ion-color-secondary-rgb: 36, 92, 67;
+  --ion-color-secondary-contrast: #F5F5EC;
+  --ion-color-secondary-contrast-rgb: 245, 245, 236;
+  --ion-color-secondary-shade: #1B4D38;
+  --ion-color-secondary-tint: #2F6E50;
+
+  --ion-color-tertiary: #C6A66B;
+  --ion-color-tertiary-rgb: 198, 166, 107;
+  --ion-color-tertiary-contrast: #172B22;
+  --ion-color-tertiary-contrast-rgb: 23, 43, 34;
+  --ion-color-tertiary-shade: #A8874A;
+  --ion-color-tertiary-tint: #D2B784;
+
+  --ion-color-success: #2F7D5B;
+  --ion-color-success-rgb: 47, 125, 91;
+  --ion-color-success-contrast: #F5F5EC;
+  --ion-color-success-contrast-rgb: 245, 245, 236;
+  --ion-color-success-shade: #276549;
+  --ion-color-success-tint: #3A8F6A;
+
+  --ion-color-warning: #B57E2E;
+  --ion-color-warning-rgb: 181, 126, 46;
+  --ion-color-warning-contrast: #F5F5EC;
+  --ion-color-warning-contrast-rgb: 245, 245, 236;
+  --ion-color-warning-shade: #9A6A26;
+  --ion-color-warning-tint: #C99544;
+
+  --ion-color-danger: #C0483C;
+  --ion-color-danger-rgb: 192, 72, 60;
+  --ion-color-danger-contrast: #FFFFFF;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #A53D33;
+  --ion-color-danger-tint: #D0645A;
+
+  --ion-color-medium: #5C7263;
+  --ion-color-medium-rgb: 92, 114, 99;
+  --ion-color-medium-contrast: #FFFFFF;
+  --ion-color-medium-contrast-rgb: 255, 255, 255;
+  --ion-color-medium-shade: #4C5F52;
+  --ion-color-medium-tint: #7C9184;
+
+  --ion-color-light: #F5F5EC;
+  --ion-color-light-rgb: 245, 245, 236;
+  --ion-color-light-contrast: #172B22;
+  --ion-color-light-contrast-rgb: 23, 43, 34;
+  --ion-color-light-shade: #E7E9DC;
+  --ion-color-light-tint: #FBFBF5;
+
+  --ion-color-dark: #172B22;
+  --ion-color-dark-rgb: 23, 43, 34;
+  --ion-color-dark-contrast: #FFFFFF;
+  --ion-color-dark-contrast-rgb: 255, 255, 255;
+  --ion-color-dark-shade: #0F2118;
+  --ion-color-dark-tint: #2A3E33;
+
+  --ion-safe-area-top: env(safe-area-inset-top);
+  --ion-safe-area-bottom: env(safe-area-inset-bottom);
+}
+
+/* ============================================================
+   DARK APPEARANCE — deep forest surfaces, cream type, mint accents.
+   Purpose-built dark theme, not a simple inversion.
+   ============================================================ */
+html.dark {
+  color-scheme: dark;
+
+  /* ---------- Dark mode palette (Premium Nature Green) ---------- */
+  --brand: #79B58A;          /* primary accent — soft emerald */
+  --brand-hover: #8CC59B;
+  --brand-deep: #4F8F68;     /* secondary accent */
+  --brand-mid: #4F8F68;
+  --brand-accent: #79B58A;
+  --brand-soft: #20372A;     /* elevated surface */
+  --brand-soft-2: #1B2E23;
+
+  --accent: #D5B777;         /* highlight — warm gold */
+  --accent-strong: #E3C98C;
+  --accent-soft: #2E2A1E;
+  --warm: #D5B777;
+  --warm-soft: #2E2A1E;
+  --accent-sage: #79B58A;
+
+  /* ---------- Surfaces & backgrounds ---------- */
+  --bg: #0D1913;
+  --bg-alt: #0A140F;
+  --surface: #17271E;
+  --surface-soft: #20372A;
+  --surface-muted: #1B2E23;
+  --surface-glass: rgba(23, 39, 30, 0.82);
+  --overlay: rgba(0, 0, 0, 0.58);
+
+  /* ---------- Borders ---------- */
+  --border: #2B4033;
+  --border-strong: #3A5244;
+
+  /* ---------- Typography colors ---------- */
+  --text-primary: #F0F4ED;
+  --text-strong: #F7FAF4;
+  --text-body: #D6E0D7;
+  --text-secondary: #A9B9AA;
+  --text-muted: #7F9285;
+  --on-brand: #0D1913;
+
+  /* ---------- Status ---------- */
+  --danger: #E58077;
+  --danger-soft: #3A1D1A;
+  --success: #79B58A;
+  --success-soft: #16301F;
+  --warning: #D5B777;
+  --warning-soft: #2E2A1E;
+  --info: #7FB0D8;
+  --info-soft: #16273A;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.26);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 14px 36px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 26px 64px rgba(0, 0, 0, 0.44);
+  --shadow-xl: 0 40px 100px rgba(0, 0, 0, 0.54);
+  --shadow-card: var(--shadow-sm);
+  --shadow-card-hover: var(--shadow-md);
+  --shadow-nav: 0 20px 54px rgba(0, 0, 0, 0.48);
+  --shadow-button: 0 10px 26px rgba(0, 0, 0, 0.32);
+  --shadow-focus: 0 0 0 4px color-mix(in srgb, var(--brand-accent) 24%, transparent);
+
+  --ion-background-color: #0D1913;
+  --ion-background-color-rgb: 13, 25, 19;
+  --ion-item-background: #17271E;
+  --ion-text-color: #F0F4ED;
+  --ion-text-color-rgb: 240, 244, 237;
+  --ion-border-color: #2B4033;
+
+  --ion-color-primary: #79B58A;
+  --ion-color-primary-rgb: 121, 181, 138;
+  --ion-color-primary-contrast: #0D1913;
+  --ion-color-primary-contrast-rgb: 13, 25, 19;
+  --ion-color-primary-shade: #68A87A;
+  --ion-color-primary-tint: #8CC59B;
+
+  --ion-color-secondary: #4F8F68;
+  --ion-color-secondary-rgb: 79, 143, 104;
+  --ion-color-secondary-contrast: #F0F4ED;
+  --ion-color-secondary-contrast-rgb: 240, 244, 237;
+  --ion-color-secondary-shade: #447D5B;
+  --ion-color-secondary-tint: #619B77;
+
+  --ion-color-tertiary: #D5B777;
+  --ion-color-tertiary-rgb: 213, 183, 119;
+  --ion-color-tertiary-contrast: #0D1913;
+  --ion-color-tertiary-contrast-rgb: 13, 25, 19;
+  --ion-color-tertiary-shade: #BBA164;
+  --ion-color-tertiary-tint: #DAC087;
+
+  --ion-color-success: #79B58A;
+  --ion-color-success-rgb: 121, 181, 138;
+  --ion-color-success-contrast: #0D1913;
+  --ion-color-success-contrast-rgb: 13, 25, 19;
+  --ion-color-success-shade: #68A87A;
+  --ion-color-success-tint: #8CC59B;
+
+  --ion-color-warning: #D5B777;
+  --ion-color-warning-rgb: 213, 183, 119;
+  --ion-color-warning-contrast: #0D1913;
+  --ion-color-warning-contrast-rgb: 13, 25, 19;
+  --ion-color-warning-shade: #BBA164;
+  --ion-color-warning-tint: #DAC087;
+
+  --ion-color-danger: #E58077;
+  --ion-color-danger-rgb: 229, 128, 119;
+  --ion-color-danger-contrast: #0D1913;
+  --ion-color-danger-contrast-rgb: 13, 25, 19;
+  --ion-color-danger-shade: #CA7068;
+  --ion-color-danger-tint: #E88D85;
+
+  --ion-color-medium: #A9B9AA;
+  --ion-color-medium-rgb: 169, 185, 170;
+  --ion-color-medium-contrast: #0D1913;
+  --ion-color-medium-contrast-rgb: 13, 25, 19;
+  --ion-color-medium-shade: #94A295;
+  --ion-color-medium-tint: #B2C0B3;
+
+  --ion-color-light: #20372A;
+  --ion-color-light-rgb: 32, 55, 42;
+  --ion-color-light-contrast: #F0F4ED;
+  --ion-color-light-contrast-rgb: 240, 244, 237;
+  --ion-color-light-shade: #1B2E23;
+  --ion-color-light-tint: #2B4636;
+
+  --ion-color-dark: #F0F4ED;
+  --ion-color-dark-rgb: 240, 244, 237;
+  --ion-color-dark-contrast: #0D1913;
+  --ion-color-dark-contrast-rgb: 13, 25, 19;
+  --ion-color-dark-shade: #D6E0D7;
+  --ion-color-dark-tint: #F7FAF4;
+}
+
+/* ============================================================
+   SMOOTH THEME TRANSITIONS
+   Applied to themed surfaces so switching appearance feels soft.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  html,
+  body,
+  #app,
+  ion-app,
+  ion-page,
+  ion-content,
+  ion-toolbar,
+  ion-item,
+  .ride-app-header,
+  .app-bottom-nav,
+  .card,
+  input,
+  select,
+  textarea {
+    transition:
+      background-color 280ms var(--ease-out),
+      border-color 280ms var(--ease-out),
+      color 220ms var(--ease-out),
+      box-shadow 280ms var(--ease-out);
+  }
+}
+
+/* Ionic chrome alignment */
+ion-content {
+  --background: var(--bg);
+  --color: var(--text-primary);
+  background:
+    radial-gradient(circle at 2% 8%, color-mix(in srgb, var(--brand-accent) 10%, transparent), transparent 22rem),
+    radial-gradient(circle at 98% 92%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 22rem),
+    var(--bg);
+}
+
+ion-toolbar {
+  --background: var(--surface);
+  --color: var(--text-primary);
+  --border-color: var(--border);
+}
+
+ion-item {
+  --background: var(--surface);
+  --color: var(--text-primary);
+  --border-color: var(--border);
+}
+
+/* ===== Responsive Layout System ===== */
+/* Mobile-first: full width on mobile, full-width desktop with content max-widths for readability.
+   Bottom nav shows on both mobile and desktop. Desktop uses full available screen width. */
+
+/* Desktop: page containers use full width with readable content max-width */
+@media (min-width: 768px) and (pointer: fine) {
+  /* Desktop: page containers use full width */
+  .pf-app,
+  .st-app,
+  .app-home,
+  .ride-home,
+  .welcome-page,
+  .auth-page,
+  .explore-page,
+  .near-page,
+  .restaurant-page,
+  .destination-page,
+  .itinerary-page,
+  .trips-page,
+  .trip-page,
+  .settings-page,
+  .security-page,
+  .privacy-page,
+  ion-page > div,
+  ion-page > main,
+  ion-page > section {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    box-sizing: border-box;
+  }
+
+  /* Desktop: content reading width (centered, max-width for long text) */
+  .desktop-content,
+  .ride-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Desktop: header spans full width */
+  ion-header,
+  .ride-app-header {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    box-sizing: border-box;
+  }
+
+  /* Desktop: wider search */
+  .app-search {
+    max-width: 600px;
+  }
+}
+
+/* Also apply desktop constraints when data-device attribute is set (Capacitor desktop) */
+[data-device="desktop"] {
+  /* Desktop: page containers use full width */
+  .pf-app,
+  .st-app,
+  .app-home,
+  .ride-home,
+  .welcome-page,
+  .auth-page,
+  .explore-page,
+  .near-page,
+  .restaurant-page,
+  .destination-page,
+  .itinerary-page,
+  .trips-page,
+  .trip-page,
+  .settings-page,
+  .security-page,
+  .privacy-page,
+  ion-page > div,
+  ion-page > main,
+  ion-page > section {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    box-sizing: border-box;
+  }
+
+  .desktop-content,
+  .ride-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  ion-header,
+  .ride-app-header {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    box-sizing: border-box;
+  }
+
+  .app-search {
+    max-width: 600px;
+  }
+}
+
+/* Mobile: ensure bottom nav visible, grids are mobile-optimized */
+@media (max-width: 767px) {
+  .app-quick-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .app-quick-item {
+    padding: 10px 4px;
+    font-size: 11px;
+  }
+
+  .quick-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 24px;
+  }
+
+  .app-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .app-list-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .list-image {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+  }
 }

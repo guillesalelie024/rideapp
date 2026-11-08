@@ -23,6 +23,7 @@ import {
   isRainyWeather,
   type CalapanWeatherConditions,
 } from '../data/weather';
+import { recordWeatherNotifications } from '../data/weatherNotifications';
 
 const router = useRouter();
 const conditions = ref<CalapanWeatherConditions | null>(null);
@@ -213,6 +214,9 @@ async function refreshWeather() {
     error.value = caught instanceof Error ? caught.message : 'Live weather is unavailable right now.';
   } finally {
     loading.value = false;
+    if (conditions.value) {
+      recordWeatherNotifications(conditions.value, { demo: isDemo.value, error: error.value });
+    }
   }
 }
 
@@ -236,7 +240,7 @@ onMounted(() => { void refreshWeather(); });
           </template>
         </RideAppHeader>
 
-        <div class="wx-content">
+        <div class="wx-content desktop-content ride-content">
           <section class="wx-current-card">
             <div class="wx-current-header">
               <div class="wx-location">
@@ -344,12 +348,12 @@ onMounted(() => { void refreshWeather(); });
 <style scoped>
 .wx-app {
   min-height: 100vh;
-  background: #ffffff;
-  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
 .wx-header {
-  background: linear-gradient(135deg, #E8F4EC 0%, #F2F8F3 100%);
+  background: linear-gradient(135deg, var(--brand-soft) 0%, var(--surface-soft) 100%);
   padding: calc(env(safe-area-inset-top) + 12px) 16px 22px 16px;
   border-bottom-left-radius: 26px;
   border-bottom-right-radius: 26px;
@@ -394,16 +398,16 @@ onMounted(() => { void refreshWeather(); });
   width: 42px;
   height: 42px;
   border-radius: 14px;
-  background: white;
-  border: 1px solid #DCE9DF;
+  background: var(--surface);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 24px;
   cursor: pointer;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(63, 128, 100, 0.06);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--brand-accent) 0.06, transparent);
 }
 
 .wx-action-btn:disabled {
@@ -417,23 +421,24 @@ onMounted(() => { void refreshWeather(); });
 }
 
 .wx-greet-line {
-  color: #3F8064;
+  color: var(--brand-accent);
   font-weight: 600;
   margin: 0;
   font-size: 14px;
 }
 
 .wx-greet-title {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 600;
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
   line-height: 1.15;
 }
 
 .wx-greet-sub {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
   margin: 0;
 }
@@ -448,17 +453,17 @@ onMounted(() => { void refreshWeather(); });
 }
 
 .wx-content {
-  padding: 16px;
+  padding: 18px 18px 0;
   max-width: 100%;
 }
 
 .wx-current-card {
-  background: white;
-  border: 1px solid #DCE9DF;
-  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(63, 128, 100, 0.04);
-  margin-bottom: 18px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 22px;
 }
 
 .wx-current-header {
@@ -466,27 +471,27 @@ onMounted(() => { void refreshWeather(); });
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: linear-gradient(90deg, #F2F8F3 0%, #ffffff 100%);
-  border-bottom: 1px solid #F2F8F3;
+  background: linear-gradient(90deg, var(--surface-soft) 0%, var(--surface) 100%);
+  border-bottom: 1px solid var(--surface-soft);
 }
 
 .wx-location {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 13px;
   font-weight: 500;
 }
 
 .wx-location ion-icon {
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 18px;
 }
 
 .wx-status {
-  background: #E8F4EC;
-  color: #3F8064;
+  background: var(--brand-soft);
+  color: var(--brand-accent);
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -494,8 +499,8 @@ onMounted(() => { void refreshWeather(); });
 }
 
 .wx-status-demo {
-  background: #FFF4E6;
-  color: #B45309;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .wx-current-main {
@@ -511,27 +516,27 @@ onMounted(() => { void refreshWeather(); });
 
 .wx-big-icon {
   font-size: 56px;
-  color: #3F8064;
+  color: var(--brand-accent);
   flex-shrink: 0;
 }
 
 .wx-temp {
-  color: #174C40;
-  font-size: 42px;
-  font-weight: 700;
+  color: var(--text-strong);
+  font-size: 46px;
+  font-weight: 600;
   line-height: 1;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-display);
 }
 
 .wx-condition {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 16px;
   font-weight: 500;
   margin: 4px 0 0 0;
 }
 
 .wx-updated-time {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
   margin: 0;
 }
@@ -539,20 +544,21 @@ onMounted(() => { void refreshWeather(); });
 .wx-demo-notice {
   padding: 0 14px 14px 14px;
   margin: 0;
-  color: #B45309;
+  color: var(--warning);
   font-size: 12px;
 }
 
 .wx-section {
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .wx-section-title {
-  color: #174C40;
-  font-size: 17px;
-  font-weight: 700;
-  margin: 0 0 12px 0;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-size: 21px;
+  font-weight: 600;
+  margin: 0 0 14px 0;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 .wx-section-header {
@@ -567,7 +573,7 @@ onMounted(() => { void refreshWeather(); });
 }
 
 .wx-suggestion-sub {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
   margin: 4px 0 0 0;
 }
@@ -582,15 +588,15 @@ onMounted(() => { void refreshWeather(); });
   display: flex;
   align-items: center;
   gap: 12px;
-  background: white;
-  border: 1px solid #DCE9DF;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 10px 12px;
   text-align: left;
   cursor: pointer;
   font: inherit;
   width: 100%;
-  box-shadow: 0 1px 4px rgba(63, 128, 100, 0.03);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--brand-accent) 0.03, transparent);
 }
 
 .wx-suggestion-card img {
@@ -605,11 +611,11 @@ onMounted(() => { void refreshWeather(); });
   width: 56px;
   height: 56px;
   border-radius: 12px;
-  background: #E8F4EC;
+  background: var(--brand-soft);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3F8064;
+  color: var(--brand-accent);
   font-size: 26px;
   flex-shrink: 0;
 }
@@ -620,7 +626,7 @@ onMounted(() => { void refreshWeather(); });
 }
 
 .wx-suggestion-info strong {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 14px;
   display: block;
   overflow: hidden;
@@ -629,12 +635,12 @@ onMounted(() => { void refreshWeather(); });
 }
 
 .wx-suggestion-info span {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .wx-suggestion-card ion-icon:last-child {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 18px;
 }
 
@@ -642,7 +648,7 @@ onMounted(() => { void refreshWeather(); });
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #3F8064;
+  color: var(--brand-accent);
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
@@ -655,23 +661,23 @@ onMounted(() => { void refreshWeather(); });
 }
 
 .wx-detail-item {
-  background: white;
-  border: 1px solid #DCE9DF;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 1px 4px rgba(63, 128, 100, 0.03);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--brand-accent) 0.03, transparent);
 }
 
 .wx-detail-label {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .wx-detail-value {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 18px;
   font-weight: 600;
 }
@@ -685,11 +691,11 @@ onMounted(() => { void refreshWeather(); });
 .wx-alert-card {
   display: flex;
   gap: 12px;
-  background: white;
-  border: 1px solid #DCE9DF;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
-  box-shadow: 0 1px 4px rgba(63, 128, 100, 0.03);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--brand-accent) 0.03, transparent);
 }
 
 .wx-alert-icon {
@@ -709,31 +715,31 @@ onMounted(() => { void refreshWeather(); });
 }
 
 .wx-alert-content strong {
-  color: #174C40;
+  color: var(--text-strong);
   font-size: 14px;
   display: block;
   margin-bottom: 4px;
 }
 
 .wx-alert-content p {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 12px;
   margin: 0;
   line-height: 1.5;
 }
 
 .wx-alert-watch .wx-alert-icon {
-  background: #FEF3C7;
-  color: #D97706;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .wx-alert-info .wx-alert-icon {
-  background: #E8F4EC;
-  color: #3F8064;
+  background: var(--brand-soft);
+  color: var(--brand-accent);
 }
 
 .wx-disclaimer {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 11px;
   margin: 12px 0 0 0;
   line-height: 1.5;

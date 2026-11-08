@@ -204,7 +204,7 @@ function startAction(message: string) {
 function handleDocumentClick(event: MouseEvent) {
   const control = getActionControl(event.target);
   if (!control) return;
-  if (control.closest('.ride-feedback-backdrop')) return;
+  if (control.closest('.ride-feedback-backdrop, [data-instant-action]')) return;
   if (control.matches(':disabled, [aria-disabled="true"]') || control.hasAttribute('disabled')) return;
 
   if (isVisible.value) {

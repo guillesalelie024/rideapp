@@ -62,7 +62,7 @@ function goToLogin() {
           back-to="/profile"
         />
 
-        <main class="sec-content">
+        <main class="sec-content desktop-content ride-content">
           <section class="sec-card">
             <h2>Change password</h2>
             <template v-if="session">
@@ -151,14 +151,14 @@ function goToLogin() {
 </template>
 
 <style scoped>
-.sec-shell { min-height: 100vh; padding-bottom: calc(84px + env(safe-area-inset-bottom)); background: #f7fbf8; }
+.sec-shell { min-height: 100vh; padding-bottom: calc(104px + env(safe-area-inset-bottom)); background: var(--bg); }
 .sec-content { display: grid; gap: 14px; width: min(100%, 680px); margin: 0 auto; padding: 18px 16px 30px; }
-.sec-card { display: grid; gap: 10px; padding: 18px; border: 1px solid #dce9df; border-radius: 18px; background: #fff; box-shadow: 0 4px 16px rgb(23 76 64 / 5%); }
-.sec-card h2 { margin: 0; color: #174c40; font-family: 'Poppins', sans-serif; font-size: 16px; }
+.sec-card { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: 0 4px 16px rgb(23 76 64 / 5%); }
+.sec-card h2 { margin: 0; color: var(--text-strong); font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
 .sec-form { display: grid; gap: 8px; }
-.sec-note { margin: 0; color: #526b60; font-size: 13px; line-height: 1.55; }
+.sec-note { margin: 0; color: var(--text-body); font-size: 13px; line-height: 1.55; }
 .sec-actions, .sec-links { display: flex; flex-wrap: wrap; gap: 10px; }
-.sec-link-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid #cfe2d5; border-radius: 12px; color: #2f6b4f; font-weight: 600; text-decoration: none; }
-.sec-danger { min-height: 44px; padding: 0 16px; border: 1px solid #e6b8b8; border-radius: 12px; background: #fff7f7; color: #9a2f2f; cursor: pointer; font-weight: 600; }
-.sec-links a { color: #2f6b4f; font-weight: 600; }
+.sec-link-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--border); border-radius: 12px; color: var(--brand-mid); font-weight: 600; text-decoration: none; }
+.sec-danger { min-height: 44px; padding: 0 16px; border: 1px solid color-mix(in srgb, var(--danger) 36%, var(--border)); border-radius: 12px; background: var(--danger-soft); color: var(--danger); cursor: pointer; font-weight: 600; }
+.sec-links a { color: var(--brand-mid); font-weight: 600; }
 </style>

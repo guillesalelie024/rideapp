@@ -15,7 +15,7 @@ import RideAppHeader from '../components/RideAppHeader.vue';
           back-to="/profile"
         />
 
-        <main class="legal-content">
+        <main class="legal-content desktop-content ride-content">
           <section class="legal-card">
             <h2>Using RIDE</h2>
             <p>RIDE helps you explore Calapan City, plan itineraries, compare published fare references, and track trips you choose to start. By using the app, you agree to use it lawfully and to verify important travel details before you depart.</p>
@@ -54,10 +54,10 @@ import RideAppHeader from '../components/RideAppHeader.vue';
 </template>
 
 <style scoped>
-.legal-shell { min-height: 100vh; background: #f7fbf8; }
+.legal-shell { min-height: 100vh; background: var(--bg); }
 .legal-content { display: grid; gap: 12px; width: min(100%, 760px); margin: 0 auto; padding: 18px 16px 40px; }
-.legal-card { padding: 18px; border: 1px solid #dce9df; border-radius: 16px; background: #fff; }
-.legal-card h2 { margin: 0 0 8px; color: #174c40; font-family: 'Poppins', sans-serif; font-size: 16px; }
-.legal-card p { margin: 0; color: #526b60; font-size: 13px; line-height: 1.65; }
-.legal-back { justify-self: start; color: #2f6b4f; font-weight: 700; }
+.legal-card { padding: 18px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.legal-card h2 { margin: 0 0 8px; color: var(--text-strong); font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.legal-card p { margin: 0; color: var(--text-body); font-size: 13px; line-height: 1.65; }
+.legal-back { justify-self: start; color: var(--brand-mid); font-weight: 700; }
 </style>

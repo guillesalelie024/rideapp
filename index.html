@@ -7,12 +7,34 @@
     <base href="/" />
 
     <meta name="description" content="Discover places in Calapan City, Oriental Mindoro, and plan your itinerary with RIDE." />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#F5F5EC" />
     <meta name="color-scheme" content="light" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <meta
       name="viewport"
-      content="viewport-fit=cover, width=device-width, initial-scale=1.0"
+      content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
+    <script>
+      (function () {
+        var isCapacitor = typeof Capacitor !== 'undefined' || (window.cordova !== undefined);
+        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (!isCapacitor && !isMobile && meta) {
+          // Desktop browser: allow natural desktop sizing, no device-width constraint
+          meta.setAttribute('content', 'viewport-fit=cover, width=1024, initial-scale=1, maximum-scale=1, user-scalable=yes');
+        }
+        if (isCapacitor || isMobile) {
+          document.documentElement.setAttribute('data-device', 'mobile');
+        } else {
+          document.documentElement.setAttribute('data-device', 'desktop');
+        }
+      })();
+    </script>
     <meta name="format-detection" content="telephone=no" />
     <meta name="msapplication-tap-highlight" content="no" />
 

@@ -44,16 +44,16 @@ const STATUS_LABEL: Record<TripStatus, string> = {
   cancelled: 'Cancelled',
 };
 const STATUS_COLOR: Record<TripStatus, string> = {
-  upcoming: '#059669',
-  ongoing: '#2563eb',
-  completed: '#658078',
-  cancelled: '#a11d1d',
+  upcoming: 'var(--brand, #123D2C)',
+  ongoing: 'var(--brand, #123D2C)',
+  completed: 'var(--text-secondary)',
+  cancelled: 'var(--danger)',
 };
 const STATUS_BG: Record<TripStatus, string> = {
-  upcoming: '#F0F7F3',
-  ongoing: '#EFF6FF',
-  completed: '#F2F8F3',
-  cancelled: '#FCEAEA',
+  upcoming: 'var(--brand-soft, #E7EDDF)',
+  ongoing: '#D6EACC',
+  completed: 'var(--surface-soft)',
+  cancelled: 'var(--danger-soft)',
 };
 type TripFilter = 'all' | TripStatus;
 const selectedStatus = ref<TripFilter>('all');
@@ -125,8 +125,26 @@ function tripBudget(trip: TripWithPlaces): string {
   return values.length ? values.reduce((a, b) => a + b, 0).toLocaleString() : '';
 }
 
-function openTrip(trip: TripRecordData) {
-  router.push({ name: 'TripSummary', query: { tripId: trip.id } });
+async function openTrip(trip: TripRecordData) {
+  try {
+    await router.push({ name: 'TripSummary', query: { tripId: trip.id } });
+  } catch (err) {
+    if (err && typeof err === 'object' && 'type' in err) return;
+    showError('Could not open trip details.');
+  }
+}
+
+async function openReceipt(trip: TripRecordData) {
+  if (!trip?.id) {
+    showError('Receipt not available for this trip.');
+    return;
+  }
+  try {
+    await router.push(`/trip-completion/${encodeURIComponent(trip.id)}`);
+  } catch (err) {
+    if (err && typeof err === 'object' && 'type' in err) return;
+    showError('Could not open trip receipt.');
+  }
 }
 
 function openLive(trip: TripRecordData) {
@@ -252,29 +270,29 @@ onIonViewWillEnter(fetchTrips);
   <ion-page>
     <ion-content :fullscreen="true">
       <div class="trips-page">
-        <RideAppHeader
-          eyebrow="My Journeys"
-          title="Trips"
-          subtitle="Track, manage, and revisit all your planned adventures"
-          show-back
-        />
+        <div class="trips-shell desktop-content ride-content">
+          <RideAppHeader
+            eyebrow="My Journeys"
+            title="Trips"
+            subtitle="Track, manage, and revisit all your planned adventures"
+            show-back
+            class="trips-app-header"
+          />
 
-        <section class="trips-overview" aria-label="Trip overview">
-          <div class="trips-hero-stats">
-            <div class="trips-stat">
-              <span class="trips-stat-value">{{ trips.length }}</span>
-              <span class="trips-stat-label">Total</span>
+          <section class="trips-overview" aria-label="Trip actions">
+            <div class="trips-overview-icon" aria-hidden="true">
+              <ion-icon :icon="calendarOutline"></ion-icon>
             </div>
-            <div class="trips-stat">
-              <span class="trips-stat-value">{{ grouped.upcoming.length + grouped.ongoing.length }}</span>
-              <span class="trips-stat-label">Active</span>
+            <div class="trips-overview-copy">
+              <p class="trips-overview-kicker">Plan a trip</p>
+              <h2 class="trips-overview-title">Ready for your next journey?</h2>
+              <p class="trips-overview-text">Build a new itinerary and keep your adventures organized in one place.</p>
             </div>
-          </div>
-          <router-link to="/itinerary" class="trips-create-btn">
-            <ion-icon :icon="calendarOutline" aria-hidden="true"></ion-icon>
-            Create Itinerary
-          </router-link>
-        </section>
+            <router-link to="/itinerary" class="trips-create-btn">
+              <ion-icon :icon="calendarOutline" aria-hidden="true"></ion-icon>
+              <span>Create Itinerary</span>
+            </router-link>
+          </section>
 
         <section v-if="pendingSyncCount" class="trips-sync-notice" role="status">
           <div>
@@ -327,8 +345,14 @@ onIonViewWillEnter(fetchTrips);
                       'trip-card-ongoing': trip.status === 'ongoing',
                       'trip-card-cancelled': trip.status === 'cancelled'
                     }"
+                    tabindex="0"
+                    role="button"
+                    :aria-label="`Open ${trip.itinerary.tripName || 'trip'} details`"
+                    @click="openTrip(trip)"
+                    @keydown.enter.prevent="openTrip(trip)"
+                    @keydown.space.prevent="openTrip(trip)"
                   >
-                    <div class="trip-card-media" @click="openTrip(trip)">
+                    <div class="trip-card-media">
                       <img
                         v-if="trip.stopPlaces.length && placeImage(trip.stopPlaces[0])"
                         :src="placeImage(trip.stopPlaces[0])"
@@ -346,7 +370,7 @@ onIonViewWillEnter(fetchTrips);
                     </div>
                     <div class="trip-card-content">
                       <div class="trip-card-header">
-                        <h3 class="trip-card-title" @click="openTrip(trip)">
+                        <h3 class="trip-card-title">
                           {{ trip.itinerary.tripName || trip.stopPlaces[0]?.name || 'Untitled Trip' }}
                         </h3>
                       </div>
@@ -376,6 +400,7 @@ onIonViewWillEnter(fetchTrips);
                       <div
                         class="trip-card-actions"
                         :class="{ 'trip-card-actions-three': trip.status === 'ongoing' || trip.status === 'completed' }"
+                        @click.stop
                       >
                         <button
                           v-if="trip.status === 'ongoing'"
@@ -416,7 +441,7 @@ onIonViewWillEnter(fetchTrips);
                           v-if="trip.status === 'completed'"
                           type="button"
                           class="trip-action trip-action-outline"
-                          @click="router.push({ name: 'TripCompletion', params: { id: trip.id } })"
+                          @click="openReceipt(trip)"
                         >
                           View Receipt
                         </button>
@@ -461,6 +486,7 @@ onIonViewWillEnter(fetchTrips);
             </router-link>
           </div>
         </main>
+        </div>
 
         <RideBottomNav active="trips" />
       </div>
@@ -479,6 +505,11 @@ onIonViewWillEnter(fetchTrips);
             <strong>{{ pendingDeleteTrip.itinerary.tripName || 'this trip' }}</strong>?
             This action cannot be undone.
           </p>
+          <div v-if="deletingTrip" class="trip-delete-modal-progress" role="progressbar" aria-label="Deleting trip" aria-valuetext="Deleting in progress">
+            <span class="trip-delete-modal-progress-track">
+              <span class="trip-delete-modal-progress-indicator"></span>
+            </span>
+          </div>
           <div class="trip-delete-actions">
             <button
               ref="deleteCancelButton"
@@ -489,8 +520,15 @@ onIonViewWillEnter(fetchTrips);
             >
               Keep trip
             </button>
-            <button type="button" :disabled="deletingTrip" @click="confirmDeleteTrip">
-              {{ deletingTrip ? 'Deleting…' : 'Delete trip' }}
+            <button
+              type="button"
+              class="trip-delete-confirm"
+              :class="{ 'is-loading': deletingTrip }"
+              :disabled="deletingTrip"
+              :aria-busy="deletingTrip"
+              @click="confirmDeleteTrip"
+            >
+              <span>{{ deletingTrip ? 'Deleting…' : 'Delete trip' }}</span>
             </button>
           </div>
         </section>
@@ -507,29 +545,33 @@ onIonViewWillEnter(fetchTrips);
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(18, 38, 29, 0.55);
+  background: color-mix(in srgb, var(--brand-deep, #123) 28%, rgba(0,0,0,.45));
+  backdrop-filter: blur(6px);
 }
 
 .trip-delete-dialog {
   width: min(100%, 420px);
-  padding: 26px;
-  border: 1px solid #e6f0ea;
+  padding: 24px;
+  border: 1px solid var(--border);
   border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 24px 70px rgba(10, 30, 20, 0.24);
+  background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface-soft) 45%, var(--surface)));
+  box-shadow: 0 24px 70px rgba(10, 30, 20, 0.22);
 }
 
 .trip-delete-dialog h2 {
   margin: 0;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
-  font-size: 21px;
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -.015em;
 }
 
 .trip-delete-dialog p {
-  margin: 12px 0 24px;
-  color: #5b7566;
-  line-height: 1.6;
+  margin: 10px 0 22px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .trip-delete-actions {
@@ -541,201 +583,201 @@ onIonViewWillEnter(fetchTrips);
 .trip-delete-actions button {
   min-height: 42px;
   padding: 0 16px;
-  border: 1px solid #d5e5db;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: #fff;
-  color: #315b47;
+  background: var(--surface);
+  color: var(--text-primary);
   font: inherit;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.trip-delete-actions button:last-child {
-  border-color: #b42318;
-  background: #b42318;
-  color: #fff;
+.trip-delete-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 138px;
+  border-color: color-mix(in srgb, var(--danger) 70%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, #fff 10%, var(--danger)), var(--danger));
+  color: var(--on-brand);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+.trip-delete-confirm.is-loading {
+  padding-right: 14px;
+}
+
+.trip-delete-progress {
+  display: inline-flex;
+  width: 54px;
+  height: 8px;
+  flex-shrink: 0;
+}
+.trip-delete-progress-track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.22);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 0 0 1px rgba(255,255,255,.06), 0 2px 8px rgba(255,255,255,.18);
+}
+.trip-delete-modal-progress { margin: -2px 0 16px; }
+.trip-delete-modal-progress-track,
+.trip-delete-progress-track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-soft) 70%, var(--danger-soft, #fceceb));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent), 0 0 0 1px rgba(255,255,255,.45), 0 4px 14px rgba(255,255,255,.55);
+}
+.trip-delete-progress-track { height: 8px; }
+.trip-delete-modal-progress-indicator,
+.trip-delete-progress-indicator {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  width: 38%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, #fff 65%, var(--danger, #C0483C)), #fff 45%, color-mix(in srgb, #fff 70%, var(--danger, #C0483C)));
+  box-shadow: 0 0 10px rgba(255,255,255,.75), 0 0 18px rgba(255,255,255,.45), 0 2px 8px rgba(255,255,255,.35);
+  animation: trip-delete-progress 1s ease-in-out infinite;
+}
+@keyframes trip-delete-progress {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(280%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trip-delete-modal-progress-indicator, .trip-delete-progress-indicator { width: 55%; transform: none; animation: none; }
 }
 
 .trip-delete-actions button:disabled {
   cursor: wait;
+}
+.trip-delete-actions button:disabled:not(.trip-delete-confirm) {
   opacity: 0.6;
+}
+.trip-delete-confirm:disabled {
+  opacity: 1;
 }
 
 .trips-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbf9 0%, #ffffff 40%);
-  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(120% 70% at 100% 0%, color-mix(in srgb, var(--brand-accent) 10%, transparent), transparent 55%),
+    radial-gradient(80% 50% at 0% 0%, color-mix(in srgb, var(--brand) 8%, transparent), transparent 50%),
+    var(--bg);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
-.trips-header {
-  background: radial-gradient(circle at top right, rgba(63, 128, 100, 0.12), transparent 55%),
-    linear-gradient(145deg, #e8f4ec 0%, #f4faf6 100%);
-  padding: calc(env(safe-area-inset-top) + 16px) 20px 32px 20px;
-  border-bottom-left-radius: 32px;
-  border-bottom-right-radius: 32px;
-  position: relative;
-  overflow: hidden;
-}
-
-.trips-header::after {
-  content: '';
-  position: absolute;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(63, 128, 100, 0.18) 0%, transparent 70%);
-  right: -60px;
-  top: -40px;
-  pointer-events: none;
-}
-
-.trips-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  position: relative;
-  z-index: 1;
-}
-
-.trips-brand :deep(.brand) {
-  gap: 10px;
-  align-items: center;
-}
-
-.trips-brand :deep(.brand-mark) {
-  width: 40px;
-  height: 46px;
-}
-
-.trips-brand :deep(.brand-wordmark) {
-  width: 82px;
-}
-
-.trips-profile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(63, 128, 100, 0.18);
-  color: #3f8064;
-  font-size: 28px;
-  text-decoration: none;
-  box-shadow: 0 12px 30px -18px rgba(23, 76, 64, 0.9);
-  backdrop-filter: blur(8px);
-}
-
-.trips-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  position: relative;
-  z-index: 1;
-}
-
-.trips-hero-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.trips-eyebrow {
+.trips-shell.desktop-content,
+.trips-shell.ride-content,
+.trips-shell {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: none;
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #3f8064;
+  padding: 0 max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
 }
 
-.trips-title {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  font-size: clamp(28px, 6vw, 38px);
-  font-weight: 700;
-  color: #174c40;
-  line-height: 1.05;
-}
-
-.trips-subtitle {
-  margin: 0;
-  font-size: 14px;
-  color: #5b7566;
-  max-width: 320px;
+.trips-app-header.ride-app-header,
+.trips-app-header {
+  margin: 0 calc(-1 * max(16px, env(safe-area-inset-right))) 0 calc(-1 * max(16px, env(safe-area-inset-left)));
+  width: calc(100% + max(16px, env(safe-area-inset-right)) + max(16px, env(safe-area-inset-left)));
+  max-width: none;
+  padding-right: max(8px, env(safe-area-inset-right));
+  padding-left: max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
 }
 
 .trips-overview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 16px;
-  width: min(920px, calc(100% - 40px));
-  margin: 20px auto 0;
-  padding: 16px;
-  border: 1px solid #e3eee6;
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 12px 32px -28px rgba(23, 76, 64, 0.5);
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 12%, var(--border));
+  border-radius: 24px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 92%, var(--brand-soft)), var(--surface));
+  box-shadow: 0 14px 34px -24px color-mix(in srgb, var(--brand-deep) 0.45, transparent);
+  box-sizing: border-box;
 }
+.trips-overview-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand-accent) 12%, var(--surface));
+  color: var(--brand-accent);
+  font-size: 22px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-accent) 10%, transparent);
+}
+.trips-overview-copy { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.trips-overview-kicker { margin: 0; color: var(--brand-accent); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.trips-overview-title { margin: 0; color: var(--text-strong); font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
+.trips-overview-text { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.45; }
 
 .trips-create-btn {
   display: inline-flex;
-  justify-self: start;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 10px 20px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #3f8064 0%, #2f6b4f 100%);
-  color: #ffffff;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 14px;
-  box-shadow: 0 18px 40px -24px rgba(47, 107, 79, 0.9);
-}
-
-.trips-hero-stats {
-  display: flex;
-  gap: 12px;
-}
-
-.trips-stat {
-  display: flex;
-  min-width: 100px;
-  flex-direction: column;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  min-height: 64px;
-  padding: 8px 14px;
-  border: 1px solid #e3eee6;
-  border-radius: 14px;
-  background: #f7fbf8;
-}
-
-.trips-stat-value {
-  font-family: 'Poppins', sans-serif;
-  font-size: 20px;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid, var(--brand-accent)) 100%);
+  color: var(--on-brand);
+  text-decoration: none;
   font-weight: 700;
-  color: #174c40;
+  font-size: 13px;
+  box-shadow: 0 14px 30px -18px color-mix(in srgb, var(--brand) 70%, transparent);
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
 }
+.trips-create-btn ion-icon { font-size: 18px; }
+.trips-create-btn:hover { filter: brightness(1.02); box-shadow: 0 18px 34px -18px color-mix(in srgb, var(--brand) 75%, transparent); }
+.trips-create-btn:active { transform: scale(.98); }
 
-.trips-stat-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #658078;
+.trips-sync-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--warning, #b7791f) 22%, var(--border));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--warning-soft, #fff7e6) 55%, var(--surface));
+}
+.trips-sync-notice strong { display: block; color: var(--text-strong); font-size: 13px; }
+.trips-sync-notice p { margin: 3px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.trips-sync-notice button {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--brand-accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .trips-main {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 20px 20px 0;
-  max-width: 960px;
-  margin: 0 auto;
+  gap: 20px;
+  padding: 0;
 }
 
 .trips-state {
@@ -743,27 +785,30 @@ onIonViewWillEnter(fetchTrips);
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 12px;
-  padding: 48px 24px;
+  gap: 10px;
+  padding: 42px 22px;
   border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid #e6f0ea;
-  box-shadow: 0 40px 60px -48px rgba(23, 76, 64, 0.9);
+  background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface-soft) 55%, var(--surface)));
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 44px -34px color-mix(in srgb, var(--brand-deep) 0.35, transparent);
 }
 
 .trips-state-icon {
-  font-size: 48px;
-  color: #9fc5b3;
+  font-size: 40px;
+  color: var(--brand-accent);
+  opacity: .9;
 }
 
 .trips-state-text {
   margin: 0;
-  color: #5b7566;
+  color: var(--text-secondary);
   font-size: 14px;
+  line-height: 1.45;
 }
 
 .trips-state-error .trips-state-icon {
-  color: #f5b700;
+  color: var(--danger, #b42318);
+  opacity: 1;
 }
 
 .trips-btn {
@@ -772,134 +817,139 @@ onIonViewWillEnter(fetchTrips);
   justify-content: center;
   gap: 8px;
   border-radius: 999px;
-  padding: 10px 22px;
-  font-size: 14px;
-  font-weight: 600;
+  min-height: 42px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 700;
   text-decoration: none;
   border: 1px solid transparent;
   cursor: pointer;
 }
 
 .trips-btn-primary {
-  background: linear-gradient(135deg, #3f8064 0%, #2f6b4f 100%);
-  color: #ffffff;
-  box-shadow: 0 18px 40px -24px rgba(47, 107, 79, 0.9);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid, var(--brand-accent)) 100%);
+  color: var(--on-brand);
+  box-shadow: 0 12px 26px -18px color-mix(in srgb, var(--brand) 65%, transparent);
 }
 
 .trips-container {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 16px;
 }
 
 .trips-filters {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  padding: 6px;
-  border: 1px solid #e3eee6;
-  border-radius: 18px;
-  background: #f5faf6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .trips-filter {
-  display: flex;
+  display: inline-flex;
   min-width: 0;
-  min-height: 46px;
+  min-height: 42px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  color: #5b7566;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px -10px color-mix(in srgb, var(--brand-deep) 0.2, transparent);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .trips-filter:hover {
-  background: #fff;
+  border-color: color-mix(in srgb, var(--brand-accent) 18%, var(--border));
+  background: color-mix(in srgb, var(--surface-soft) 55%, var(--surface));
+  color: var(--text-primary);
 }
 
 .trips-filter-active {
-  border-color: #dce9df;
-  background: #fff;
-  color: #174c40;
-  box-shadow: 0 2px 8px rgb(23 76 64 / 6%);
+  border-color: color-mix(in srgb, var(--brand-accent) 28%, var(--border));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-soft) 75%, var(--surface)), var(--surface));
+  color: var(--text-strong);
+  box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--brand) 0.35, transparent);
 }
+.trips-filter:active { transform: scale(.98); }
 
 .trips-filter-count {
   display: inline-flex;
-  min-width: 22px;
-  height: 22px;
+  min-width: 20px;
+  height: 20px;
   align-items: center;
   justify-content: center;
   padding: 0 6px;
   border-radius: 999px;
-  background: #e8f4ec;
-  color: #3f8064;
+  background: color-mix(in srgb, var(--border) 55%, var(--surface));
+  color: var(--text-secondary);
   font-size: 11px;
+  font-weight: 700;
   line-height: 1;
 }
-
-.trips-filter-ongoing .trips-filter-count {
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.trips-filter-cancelled .trips-filter-count {
-  background: #fceaea;
-  color: #a11d1d;
+.trips-filter-active .trips-filter-count {
+  background: color-mix(in srgb, var(--brand-accent) 14%, var(--surface));
+  color: var(--brand-accent);
 }
 
 .trips-results {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .trips-results-heading {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+  padding: 0 2px;
 }
 
 .trips-results-heading h2 {
   margin: 0;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -.015em;
 }
 
 .trips-results-heading > span {
-  color: #658078;
-  font-size: 13px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .trips-filter-empty {
   padding: 28px 20px;
-  border: 1px dashed #cbded0;
+  border: 1px dashed var(--border);
   border-radius: 18px;
-  background: #fff;
+  background: var(--surface);
   text-align: center;
 }
 
 .trips-filter-empty h3 {
   margin: 0 0 6px;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-family: var(--font-body);
   font-size: 17px;
 }
 
 .trips-filter-empty p {
   margin: 0;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -923,10 +973,10 @@ onIonViewWillEnter(fetchTrips);
 
 .trips-section-title {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   font-size: 18px;
   font-weight: 700;
-  color: #174c40;
+  color: var(--text-strong);
 }
 
 .trips-section-badge {
@@ -936,8 +986,8 @@ onIonViewWillEnter(fetchTrips);
   min-width: 28px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: rgba(63, 128, 100, 0.12);
-  color: #3f8064;
+  background: color-mix(in srgb, var(--brand-accent) 0.12, transparent);
+  color: var(--brand-accent);
   font-size: 12px;
   font-weight: 600;
 }
@@ -952,25 +1002,48 @@ onIonViewWillEnter(fetchTrips);
   display: flex;
   flex-direction: column;
   border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid #e6f0ea;
-  box-shadow: 0 60px 70px -60px rgba(23, 76, 64, 0.9);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 60px 70px -60px color-mix(in srgb, var(--brand-deep) 0.9, transparent);
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
-.trip-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 70px 80px -60px rgba(23, 76, 64, 0.95);
-  border-color: rgba(63, 128, 100, 0.4);
+.trip-card:hover,
+.trip-card.trip-card-ongoing:hover,
+.trip-card.trip-card-cancelled:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--mint-green, #8FD0A8) 42%, var(--border));
+  box-shadow: 0 18px 36px -20px rgba(143, 208, 168, 0.55), 0 0 0 1px rgba(143, 208, 168, 0.18);
 }
 
 .trip-card-ongoing {
-  box-shadow: 0 60px 70px -58px rgba(37, 99, 235, 0.8);
+  border-color: color-mix(in srgb, var(--brand-accent, #4F7A57) 22%, var(--border));
+  box-shadow: 0 14px 34px -26px color-mix(in srgb, var(--brand, #123D2C) 0.28, transparent);
 }
 
 .trip-card-cancelled {
-  opacity: 0.8;
+  opacity: 0.82;
+}
+
+.trip-card.trip-card-ongoing:active,
+.trip-card.trip-card-ongoing:focus,
+.trip-card.trip-card-ongoing:focus-within,
+.trip-card.trip-card-cancelled:active,
+.trip-card.trip-card-cancelled:focus,
+.trip-card.trip-card-cancelled:focus-within,
+.trip-card:active,
+.trip-card:focus,
+.trip-card:focus-within {
+  transform: translateY(0);
+  border-color: #b7ddb9;
+  background-color: #e6f4e7;
+  background: linear-gradient(180deg, #edf8ee 0%, #e4f3e5 100%) !important;
+  box-shadow: 0 0 0 3px rgba(183, 221, 185, 0.35), 0 10px 24px -20px rgba(79, 122, 87, 0.22);
+  outline: none;
+  -webkit-tap-highlight-color: rgba(183, 221, 185, 0.35);
 }
 
 .trip-card-media {
@@ -992,8 +1065,8 @@ onIonViewWillEnter(fetchTrips);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle, rgba(63, 128, 100, 0.16) 0%, rgba(232, 244, 236, 0.9) 100%);
-  color: #3f8064;
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand-accent) 16%, transparent) 0%, var(--surface-muted) 100%);
+  color: var(--brand-accent);
   font-size: 42px;
 }
 
@@ -1028,10 +1101,10 @@ onIonViewWillEnter(fetchTrips);
 
 .trip-card-title {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   font-size: 18px;
   font-weight: 600;
-  color: #174c40;
+  color: var(--text-strong);
   cursor: pointer;
 }
 
@@ -1045,12 +1118,12 @@ onIonViewWillEnter(fetchTrips);
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #5b7566;
+  color: var(--text-body);
   font-size: 13px;
 }
 
 .trip-info-row ion-icon {
-  color: #3f8064;
+  color: var(--brand-accent);
   font-size: 18px;
 }
 
@@ -1064,8 +1137,8 @@ onIonViewWillEnter(fetchTrips);
   gap: 8px;
   padding: 10px 16px;
   border-radius: 999px;
-  background: rgba(63, 128, 100, 0.08);
-  color: #3f8064;
+  background: color-mix(in srgb, var(--brand-accent) 0.08, transparent);
+  color: var(--brand-accent);
   font-size: 13px;
   font-weight: 500;
 }
@@ -1079,95 +1152,110 @@ onIonViewWillEnter(fetchTrips);
   align-items: center;
   justify-content: space-between;
   padding-top: 10px;
-  border-top: 1px solid #eef5f0;
+  border-top: 1px solid var(--surface-soft);
 }
 
 .trip-budget-label {
   font-size: 13px;
-  color: #5b7566;
+  color: var(--text-body);
 }
 
 .trip-budget-value {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   font-weight: 600;
-  color: #174c40;
+  color: var(--text-strong);
 }
 
-.trip-card-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
+.trip-card-actions,
 .trip-card-actions-three {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  width: 100%;
+  align-items: stretch;
 }
 
-.trip-card-actions-three .trip-action {
-  justify-content: center;
-  min-width: 0;
-  padding: 9px 6px;
-  gap: 5px;
-  white-space: nowrap;
-}
-
-.trip-action {
+.trip-action,
+.trip-card-actions-three .trip-action,
+.trip-action-cancel,
+.trip-action-danger {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 42px;
   border-radius: 999px;
-  padding: 9px 18px;
+  padding: 0 12px;
+  font: inherit;
   font-size: 13px;
   font-weight: 600;
-  border: 1px solid transparent;
-  background: transparent;
+  line-height: 1.1;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: none;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform .14s ease, box-shadow .14s ease, background-color .14s ease, border-color .14s ease, filter .14s ease, color .14s ease;
 }
+.trip-action ion-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
+.trip-action:active { transform: scale(.985); }
 
 .trip-action-primary {
-  background: linear-gradient(135deg, #3f8064 0%, #2f6b4f 100%);
-  color: #ffffff;
-  box-shadow: 0 18px 40px -26px rgba(47, 107, 79, 0.9);
+  grid-column: 1 / -1;
+  border-color: color-mix(in srgb, var(--brand, #123D2C) 80%, transparent);
+  background: linear-gradient(135deg, var(--brand, #123D2C) 0%, var(--brand-mid, #245C43) 100%);
+  color: var(--on-brand, #F5F5EC);
+  box-shadow: 0 10px 22px -16px color-mix(in srgb, var(--brand, #123D2C) 70%, transparent);
 }
+.trip-action-primary:hover { filter: brightness(1.03); }
 
 .trip-action-secondary {
-  background: rgba(63, 128, 100, 0.12);
-  color: #3f8064;
+  grid-column: 1 / -1;
+  border-color: color-mix(in srgb, var(--brand-accent, #4F7A57) 35%, var(--border));
+  background: color-mix(in srgb, var(--brand-soft, #E7EDDF) 75%, var(--surface));
+  color: var(--brand, #123D2C);
+}
+.trip-action-secondary:hover {
+  background: color-mix(in srgb, var(--brand-soft, #E7EDDF) 92%, var(--surface));
+  border-color: color-mix(in srgb, var(--brand-accent, #4F7A57) 48%, var(--border));
 }
 
 .trip-action-outline {
-  border-color: rgba(63, 128, 100, 0.4);
-  color: #3f8064;
+  border-color: color-mix(in srgb, var(--brand-accent, #4F7A57) 30%, var(--border));
+  background: var(--surface);
+  color: var(--brand-accent, #4F7A57);
+}
+.trip-action-outline:hover {
+  background: color-mix(in srgb, var(--brand-soft-2, #F0F3E8) 55%, var(--surface));
 }
 
 .trip-action-ghost {
-  color: #5b7566;
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface-soft, #F0F2E8) 55%, var(--surface));
+  color: var(--text-secondary, #5C7263);
 }
 
-.trip-action-cancel {
-  color: #b42318;
-  background: rgba(180, 35, 24, 0.08);
-  border-radius: 999px;
-  padding: 9px 16px;
+.trip-action-cancel,
+.trip-action-danger,
+.trip-action.trip-action-ghost.trip-action-cancel,
+.trip-action.trip-action-ghost.trip-action-danger {
+  border-color: color-mix(in srgb, var(--danger, #C0483C) 28%, var(--border));
+  background: color-mix(in srgb, var(--danger-soft, #FBEBE9) 75%, var(--surface));
+  color: var(--danger, #C0483C);
 }
-
-.trip-action-danger {
-  flex: 0 0 auto;
-  min-height: 40px;
-  border: 1px solid rgba(180, 35, 24, 0.24);
-  color: #b42318;
-  background: #fff8f7;
-  border-radius: 999px;
-  padding: 9px 16px;
-  white-space: nowrap;
-}
-
-.trip-action-danger:hover {
-  border-color: rgba(180, 35, 24, 0.42);
-  background: #ffefed;
+.trip-action-cancel:hover,
+.trip-action-danger:hover,
+.trip-action.trip-action-ghost.trip-action-cancel:hover,
+.trip-action.trip-action-ghost.trip-action-danger:hover {
+  border-color: color-mix(in srgb, var(--danger, #C0483C) 42%, var(--border));
+  background: var(--danger-soft, #FBEBE9);
 }
 
 .trip-action-danger:focus-visible {
@@ -1180,70 +1268,78 @@ onIonViewWillEnter(fetchTrips);
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 12px;
-  padding: 56px 24px;
-  border-radius: 28px;
-  background: radial-gradient(circle, rgba(63, 128, 100, 0.12) 0%, rgba(255, 255, 255, 0.98) 70%);
-  border: 1px solid #e6f0ea;
-  box-shadow: 0 60px 70px -60px rgba(23, 76, 64, 0.9);
+  gap: 10px;
+  padding: 44px 22px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--brand-soft) 35%, var(--surface)), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 14%, var(--border));
+  box-shadow: 0 18px 44px -34px color-mix(in srgb, var(--brand-deep) 0.3, transparent);
 }
 
 .trips-empty-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: rgba(63, 128, 100, 0.14);
-  color: #3f8064;
-  font-size: 38px;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--brand-accent) 12%, var(--surface));
+  color: var(--brand-accent);
+  font-size: 30px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-accent) 10%, transparent);
 }
 
 .trips-empty-title {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  color: #174c40;
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -.015em;
+  color: var(--text-strong);
 }
 
 .trips-empty-text {
   margin: 0;
-  color: #5b7566;
+  max-width: 34ch;
+  color: var(--text-secondary);
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .trips-empty-btn {
   margin-top: 8px;
 }
 
-@media (min-width: 640px) {
-  .trips-header {
-    padding-left: 32px;
-    padding-right: 32px;
-  }
 
-  .trips-main {
-    padding-left: 32px;
-    padding-right: 32px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .trips-hero {
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-  }
-}
 
 @media (max-width: 520px) {
   .trips-overview {
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
+    align-items: stretch;
     gap: 12px;
-    width: calc(100% - 32px);
-    padding: 12px;
+    padding: 14px;
+    text-align: left;
+  }
+
+  .trips-overview-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    border-radius: 14px;
+  }
+
+  .trips-overview-copy {
+    gap: 4px;
+  }
+
+  .trips-overview-title {
+    font-size: 17px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .trips-overview-text {
+    font-size: 13px;
+    overflow-wrap: anywhere;
   }
 
   .trips-create-btn {
@@ -1260,27 +1356,35 @@ onIonViewWillEnter(fetchTrips);
     width: 100%;
   }
 
-  .trips-hero-stats {
-    gap: 8px;
-  }
-
   .trips-filters {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: 8px;
   }
 
   .trips-filter {
     justify-content: space-between;
     padding-inline: 12px;
+    white-space: normal;
   }
 
   .trips-results-heading h2 {
     font-size: 18px;
   }
 
-  .trips-stat {
-    min-width: 0;
-    flex: 1;
+  .trips-grid {
+    grid-template-columns: 1fr;
   }
 }
+
+@media (min-width: 720px) {
+  .trip-card-actions,
+  .trip-card-actions-three {
+    gap: 10px;
+  }
+}
+
+.trip-status-chip { backdrop-filter: blur(8px); box-shadow: 0 6px 16px -10px rgba(0,0,0,.25); }
+.trip-route-preview { border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
 </style>
+

@@ -48,7 +48,7 @@ withDefaults(defineProps<{
   width: 32%;
   height: 100%;
   border-radius: 0 999px 999px 0;
-  background: linear-gradient(90deg, #78a982 0%, #557b5b 55%, #355e3b 100%);
+  background: linear-gradient(90deg, var(--text-muted) 0%, var(--text-body) 55%, var(--text-body) 100%);
   box-shadow: 0 0 9px rgb(85 123 91 / 35%);
   transform: translateX(-110%);
   animation: ride-progress-travel 1.05s cubic-bezier(0.45, 0, 0.55, 1) infinite;

@@ -14,7 +14,7 @@ import RideBottomNav from '../components/RideBottomNav.vue';
           subtitle="Real-time Itinerary and Destination Explorer"
           show-back
         />
-        <main class="about-content">
+        <main class="about-content desktop-content ride-content">
           <section class="about-card about-intro">
             <span class="about-mark" aria-hidden="true">R</span>
             <div>
@@ -49,18 +49,18 @@ import RideBottomNav from '../components/RideBottomNav.vue';
 </template>
 
 <style scoped>
-.about-page { min-height: 100vh; padding-bottom: calc(84px + env(safe-area-inset-bottom)); background: #fff; }
+.about-page { min-height: 100vh; padding-bottom: calc(104px + env(safe-area-inset-bottom)); background: var(--bg); }
 .about-content { display: grid; gap: 16px; width: min(100%, 760px); margin: 0 auto; padding: 18px 16px 28px; }
-.about-card { padding: 19px; border: 1px solid #dce9df; border-radius: 18px; background: #fff; box-shadow: 0 4px 16px rgb(23 76 64 / 5%); }
-.about-card h2 { margin: 0 0 10px; color: #174c40; font-size: 17px; }
-.about-card p, .about-card li { color: #526b60; font-size: 14px; line-height: 1.65; }
+.about-card { padding: 19px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: 0 4px 16px rgb(23 76 64 / 5%); }
+.about-card h2 { margin: 0 0 10px; color: var(--text-strong); font-size: 17px; }
+.about-card p, .about-card li { color: var(--text-body); font-size: 14px; line-height: 1.65; }
 .about-card p { margin: 0; }
 .about-card p + p { margin-top: 10px; }
-.about-intro { display: flex; align-items: flex-start; gap: 14px; background: #f2f8f3; }
+.about-intro { display: flex; align-items: flex-start; gap: 14px; background: var(--surface-soft); }
 .about-intro h2 { margin-top: 2px; }
-.about-mark { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 13px; background: #3f8064; color: #fff; font-size: 22px; font-weight: 800; }
+.about-mark { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 13px; background: var(--brand); color: var(--on-brand); font-size: 22px; font-weight: 800; }
 .about-card ul { display: grid; gap: 8px; margin: 0; padding-left: 20px; }
-.about-note { border-color: #e8eee8; background: #fbfcfb; }
-.about-footer { margin: 4px 0 0; color: #82978d; font-size: 12px; text-align: center; }
+.about-note { border-color: var(--border); background: var(--surface); }
+.about-footer { margin: 4px 0 0; color: var(--text-muted); font-size: 12px; text-align: center; }
 @media (min-width: 600px) { .about-content { padding-right: 24px; padding-left: 24px; } }
 </style>

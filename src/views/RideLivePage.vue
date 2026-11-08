@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import type { Position as CapacitorPosition } from '@capacitor/geolocation';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { busOutline, checkmarkCircleOutline, compassOutline, locationOutline, navigateOutline } from 'ionicons/icons';
+import { busOutline, checkmarkCircleOutline, compassOutline, documentTextOutline, locationOutline, navigateOutline } from 'ionicons/icons';
 import { useRoute, useRouter } from 'vue-router';
 import RideBottomNav from '../components/RideBottomNav.vue';
 import RideAppHeader from '../components/RideAppHeader.vue';
@@ -14,7 +14,7 @@ import TripStopProgress from '../components/TripStopProgress.vue';
 import { loadAlertSettings } from '../data/alertSettings';
 import { getRideDestinations } from '../data/destinations';
 import { createEmptyItinerary, getUntrackedItineraryStops, ITINERARY_DRAFT_KEY, loadItinerary, SAVED_ITINERARY_KEY, type Itinerary } from '../data/itinerary';
-import { getTrip, saveSavedTrip, updateTrip } from '../data/trips';
+import { getTrip, loadTrips, saveSavedTrip, updateTrip, SAVED_TRIP_ID_KEY } from '../data/trips';
 import { beginLoadingOperation } from '../composables/loadingProgress';
 import { showError, showSuccess } from '../composables/feedback';
 
@@ -75,7 +75,7 @@ function readRoute(): RouteSelection | null {
 try {
   const activeTrip = requestedTripId ? getTrip(requestedTripId) : null;
   itinerary.value = activeTrip?.itinerary ?? loadItinerary(sourceKey) ?? createEmptyItinerary();
-  activeTripId.value = activeTrip?.id ?? '';
+  activeTripId.value = activeTrip?.id ?? localStorage.getItem(SAVED_TRIP_ID_KEY) ?? '';
   routeSelection.value = activeTrip?.selectedRoute
     ? { ...activeTrip.selectedRoute, mode: activeTrip.selectedRoute.mode as Mode }
     : readRoute();
@@ -112,6 +112,24 @@ const distanceKm = computed(() => {
   const dLon = rad(destination.longitude - location.longitude);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(location.latitude)) * Math.cos(rad(destination.latitude)) * Math.sin(dLon / 2) ** 2;
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+});
+
+const estimatedArrival = computed(() => {
+  const distance = distanceKm.value;
+  if (!distance || !currentLocation.value || !selectedDestination.value) return null;
+  // Use route selection travel time as a rough basis, or assume 30 km/h average city speed
+  const routeTime = routeSelection.value?.travelTime;
+  let averageSpeedKmh = 30; // typical city speed
+  if (routeTime) {
+    const match = routeTime.match(/(\d+)\s*min/);
+    if (match) {
+      // Estimate speed from route: we don't know route distance, so use a heuristic
+      averageSpeedKmh = 25; // conservative city average with stops
+    }
+  }
+  const hours = distance / averageSpeedKmh;
+  const minutes = Math.max(1, Math.round(hours * 60));
+  return { minutes, distance };
 });
 const mapUrl = computed(() => {
   if (!selectedDestination.value) return '';
@@ -325,6 +343,15 @@ function markVisited(placeId: string) {
     catch { locationError.value = 'Stop progress could not be added to the trip record.'; }
   }
 }
+function openReceipt() {
+  const completedFallback = loadTrips().find((trip) => trip.status === 'completed');
+  const id = activeTripId.value || completedFallback?.id || '';
+  if (!id) {
+    showError('No trip receipt is available yet.');
+    return;
+  }
+  void router.push({ name: 'TripCompletion', params: { id } });
+}
 function completeTrip() {
   if (untrackedStops.value.length) {
     showError(`This trip includes places without verified map details. Remove ${untrackedStops.value.map((stop) => stop.name).join(', ')} before completing it.`);
@@ -432,6 +459,11 @@ onBeforeUnmount(stopLocation);
                   <strong>{{ distanceKm !== null ? `${distanceKm.toFixed(2)} km straight-line` : 'Unavailable' }}</strong>
                   <small>Straight-line estimate. Road distance is not available in RIDE.</small>
                 </div>
+                <div v-if="estimatedArrival && currentLocation">
+                  <span>Estimated arrival</span>
+                  <strong>in about {{ estimatedArrival.minutes }} min</strong>
+                  <small>Based on straight-line distance and typical city speed.</small>
+                </div>
               </div>
             </section>
 
@@ -503,11 +535,15 @@ onBeforeUnmount(stopLocation);
                 <strong>{{ tripEnded ? 'Trip completed' : 'Finish your trip' }}</strong>
                 <span>{{ tripEnded ? 'Your trip receipt is ready to view.' : `Mark all ${tripPlaces.length} ${tripPlaces.length === 1 ? 'stop' : 'stops'} as visited to complete this trip.` }}</span>
               </div>
-              <button class="live-complete-btn" type="button" :disabled="previewMode || tripEnded || untrackedStops.length > 0 || visitedIds.length !== tripPlaces.length" @click="completeTrip">
+              <button v-if="!tripEnded" class="live-complete-btn" type="button" :disabled="previewMode || untrackedStops.length > 0 || visitedIds.length !== tripPlaces.length" @click="completeTrip">
                 <ion-icon :icon="checkmarkCircleOutline"></ion-icon>
-                <span>{{ tripEnded ? 'Trip Completed' : 'Mark Trip as Complete' }}</span>
+                <span>Mark Trip as Complete</span>
               </button>
-              <router-link class="live-summary-link" :to="{ name: 'TripSummary', query: { tripId: activeTripId || undefined, source: route.query.source === 'saved' ? 'saved' : undefined } }">
+              <button v-if="tripEnded && activeTripId" class="live-complete-btn" type="button" @click="openReceipt">
+                <ion-icon :icon="documentTextOutline"></ion-icon>
+                <span>View Receipt</span>
+              </button>
+              <router-link v-if="!tripEnded" class="live-summary-link" :to="{ name: 'TripSummary', query: { tripId: activeTripId || undefined, source: route.query.source === 'saved' ? 'saved' : undefined } }">
                 <span>View Trip Summary</span>
                 <ion-icon :icon="navigateOutline"></ion-icon>
               </router-link>
@@ -543,8 +579,8 @@ onBeforeUnmount(stopLocation);
 <style scoped>
 .ride-live-shell {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fbf9 0%, #ffffff 40%);
-  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, var(--surface-soft) 0%, var(--bg) 40%);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
 .ride-live-hero-stats {
@@ -558,10 +594,10 @@ onBeforeUnmount(stopLocation);
   justify-content: space-between;
   gap: 20px;
   padding: 16px;
-  border: 1px solid #e3eee6;
+  border: 1px solid var(--surface-soft);
   border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 12px 32px -28px rgba(23, 76, 64, 0.5);
+  background: var(--surface);
+  box-shadow: 0 12px 32px -28px color-mix(in srgb, var(--brand-deep) 0.5, transparent);
 }
 
 .ride-live-overview-copy {
@@ -573,14 +609,14 @@ onBeforeUnmount(stopLocation);
 
 .ride-live-overview-copy p {
   margin: 0;
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
 }
 
 .ride-live-overview-copy .ride-live-overview-title {
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-family: var(--font-body);
   font-size: 16px;
   font-weight: 700;
 }
@@ -593,40 +629,39 @@ onBeforeUnmount(stopLocation);
   justify-content: center;
   min-height: 64px;
   padding: 8px 14px;
-  border: 1px solid #e3eee6;
+  border: 1px solid var(--surface-soft);
   border-radius: 14px;
-  background: #f7fbf8;
+  background: var(--bg);
 }
 
 .ride-live-stat-value {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   font-size: 18px;
   font-weight: 700;
-  color: #174c40;
+  color: var(--text-strong);
 }
 
 .ride-live-stat-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #658078;
+  color: var(--text-secondary);
 }
 
 .ride-live-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 960px;
-  margin: 0 auto;
+  max-width: 100%;
   padding: 20px 16px 0 16px;
 }
 
 .live-card {
   padding: clamp(18px, 4vw, 24px);
-  border: 1px solid #e3efe7;
+  border: 1px solid var(--surface-soft);
   border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 24px 60px -52px rgba(23, 76, 64, 0.75);
+  background: var(--surface);
+  box-shadow: 0 24px 60px -52px color-mix(in srgb, var(--brand-deep) 0.75, transparent);
 }
 
 .live-focus-card {
@@ -651,16 +686,16 @@ onBeforeUnmount(stopLocation);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 11px;
-  color: #3f8064;
+  color: var(--brand-accent);
   font-weight: 700;
 }
 
 .live-card-title {
   margin: 5px 0 0 0;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-body);
   font-size: clamp(21px, 4.5vw, 27px);
   font-weight: 700;
-  color: #174c40;
+  color: var(--text-strong);
   line-height: 1.2;
 }
 
@@ -669,7 +704,7 @@ onBeforeUnmount(stopLocation);
   align-items: flex-start;
   gap: 6px;
   margin: 8px 0 0;
-  color: #5b7566;
+  color: var(--text-body);
   font-size: 0.84rem;
   line-height: 1.45;
 }
@@ -677,7 +712,7 @@ onBeforeUnmount(stopLocation);
 .live-place-address ion-icon {
   flex: 0 0 auto;
   margin-top: 2px;
-  color: #3f8064;
+  color: var(--brand-accent);
 }
 
 .live-place-address span {
@@ -692,8 +727,8 @@ onBeforeUnmount(stopLocation);
   width: 50px;
   height: 50px;
   border-radius: 16px;
-  background: rgba(63, 128, 100, 0.14);
-  color: #3f8064;
+  background: color-mix(in srgb, var(--brand-accent) 0.14, transparent);
+  color: var(--brand-accent);
   font-size: 26px;
 }
 
@@ -704,10 +739,10 @@ onBeforeUnmount(stopLocation);
   align-self: flex-start;
   max-width: 100%;
   padding: 8px 12px;
-  border: 1px solid #e3efe7;
+  border: 1px solid var(--surface-soft);
   border-radius: 999px;
-  background: #f7fbf8;
-  color: #2f6b4f;
+  background: var(--bg);
+  color: var(--brand-mid);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.35;
@@ -751,20 +786,20 @@ onBeforeUnmount(stopLocation);
 }
 
 .live-action-primary {
-  background: linear-gradient(135deg, #3f8064 0%, #2f6b4f 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 100%);
+  color: var(--on-brand);
   box-shadow: 0 18px 40px -26px rgba(47, 107, 79, 0.9);
 }
 
 .live-action-secondary {
-  background: #e9f3ee;
-  color: #2f6b4f;
+  background: var(--surface-soft);
+  color: var(--brand-accent);
 }
 
 .live-action-ghost {
-  border-color: #c4dccd;
-  background: #ffffff;
-  color: #3f8064;
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--brand-accent);
 }
 
 .live-arrival-card {
@@ -772,9 +807,9 @@ onBeforeUnmount(stopLocation);
   flex-direction: column;
   gap: 12px;
   padding: 16px 18px;
-  border: 1px solid #d8eadf;
+  border: 1px solid var(--border);
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(63, 128, 100, 0.12) 0%, rgba(232, 244, 236, 0.95) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-accent) 12%, var(--surface)) 0%, var(--surface-soft) 100%);
 }
 
 .live-arrival-text {
@@ -785,14 +820,14 @@ onBeforeUnmount(stopLocation);
 
 .live-arrival-title {
   margin: 0;
-  color: #174c40;
+  color: var(--text-strong);
   font-size: 0.92rem;
   font-weight: 700;
 }
 
 .live-arrival-sub {
   margin: 0;
-  color: #3f8064;
+  color: var(--brand-accent);
   font-size: 0.82rem;
   line-height: 1.45;
 }
@@ -806,8 +841,8 @@ onBeforeUnmount(stopLocation);
   padding: 10px 20px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #3f8064 0%, #2f6b4f 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 100%);
+  color: var(--on-brand);
   font-weight: 700;
   font-size: 0.88rem;
   cursor: pointer;
@@ -828,8 +863,8 @@ onBeforeUnmount(stopLocation);
 
 .live-section-title {
   margin: 4px 0 0;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-family: var(--font-body);
   font-size: 1.15rem;
   font-weight: 600;
   line-height: 1.25;
@@ -839,21 +874,21 @@ onBeforeUnmount(stopLocation);
   flex: 0 0 auto;
   padding: 5px 10px;
   border-radius: 999px;
-  background: #eef5f0;
-  color: #658078;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
   font-size: 0.7rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .live-section-badge-on {
-  background: #e1f2e8;
-  color: #2f6b4f;
+  background: var(--border);
+  color: var(--brand-mid);
 }
 
 .live-map-card {
   overflow: hidden;
-  border: 1px solid #e3efe7;
+  border: 1px solid var(--surface-soft);
   border-radius: 18px;
 }
 
@@ -873,13 +908,13 @@ onBeforeUnmount(stopLocation);
   height: 280px;
   padding: 18px;
   text-align: center;
-  color: #5b7566;
-  background: radial-gradient(circle, rgba(63, 128, 100, 0.12) 0%, rgba(248, 251, 249, 1) 100%);
+  color: var(--text-body);
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand-accent) 12%, transparent) 0%, var(--surface-soft) 100%);
 }
 
 .live-map-placeholder ion-icon {
   font-size: 36px;
-  color: #3f8064;
+  color: var(--brand-accent);
 }
 
 .live-location-strip {
@@ -893,13 +928,13 @@ onBeforeUnmount(stopLocation);
   gap: 3px;
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid #edf5ef;
+  border: 1px solid var(--surface-soft);
   border-radius: 14px;
-  background: #f7fbf8;
+  background: var(--bg);
 }
 
 .live-location-strip span {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.07em;
@@ -907,14 +942,14 @@ onBeforeUnmount(stopLocation);
 }
 
 .live-location-strip strong {
-  color: #174c40;
+  color: var(--text-strong);
   font-size: 0.84rem;
   line-height: 1.4;
   word-break: break-word;
 }
 
 .live-location-strip small {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 0.72rem;
   line-height: 1.4;
 }
@@ -932,12 +967,12 @@ onBeforeUnmount(stopLocation);
 }
 
 .live-complete-copy strong {
-  color: #174c40;
+  color: var(--text-strong);
   font-size: 0.95rem;
 }
 
 .live-complete-copy span {
-  color: #658078;
+  color: var(--text-secondary);
   font-size: 0.8rem;
   line-height: 1.4;
 }
@@ -951,8 +986,8 @@ onBeforeUnmount(stopLocation);
   padding: 14px 24px;
   border: none;
   border-radius: 14px;
-  background: linear-gradient(135deg, #2f6b4f 0%, #1f4d37 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand-mid) 0%, var(--brand-deep) 100%);
+  color: var(--on-brand);
   font-weight: 700;
   font-size: 0.95rem;
   box-shadow: 0 26px 50px -30px rgba(31, 77, 55, 0.95);
@@ -969,7 +1004,7 @@ onBeforeUnmount(stopLocation);
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #3f8064;
+  color: var(--brand-accent);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.88rem;
@@ -989,22 +1024,22 @@ onBeforeUnmount(stopLocation);
   height: 54px;
   place-items: center;
   border-radius: 50%;
-  background: #eaf4e9;
-  color: #3f8064;
+  background: var(--surface-soft);
+  color: var(--brand-accent);
   font-size: 1.6rem;
 }
 
 .live-empty h2 {
   margin: 0;
-  color: #174c40;
-  font-family: 'Poppins', sans-serif;
+  color: var(--text-strong);
+  font-family: var(--font-body);
   font-size: 1.2rem;
 }
 
 .live-empty p {
   max-width: 360px;
   margin: 0 0 8px;
-  color: #5b7566;
+  color: var(--text-body);
   font-size: 0.88rem;
   line-height: 1.5;
 }
@@ -1028,9 +1063,9 @@ onBeforeUnmount(stopLocation);
   gap: 14px;
   padding: clamp(20px, 6vw, 28px);
   overflow-y: auto;
-  border: 1px solid #e3eee6;
+  border: 1px solid var(--surface-soft);
   border-radius: 24px;
-  background: #ffffff;
+  background: var(--surface);
   box-shadow: 0 30px 70px rgba(15, 35, 27, 0.25);
   text-align: center;
 }
@@ -1042,25 +1077,25 @@ onBeforeUnmount(stopLocation);
   width: 56px;
   height: 56px;
   border-radius: 18px;
-  background: rgba(63, 128, 100, 0.16);
-  color: #3f8064;
+  background: color-mix(in srgb, var(--brand-accent) 0.16, transparent);
+  color: var(--brand-accent);
   font-size: 30px;
 }
 
 .live-arrival-dialog h2 {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
-  color: #174c40;
+  font-family: var(--font-body);
+  color: var(--text-strong);
 }
 
 .live-arrival-dialog p {
   margin: 0;
-  color: #5b7566;
+  color: var(--text-body);
   line-height: 1.5;
 }
 
 .live-arrival-dialog strong {
-  color: #174c40;
+  color: var(--text-strong);
 }
 
 .live-arrival-dialog-actions {

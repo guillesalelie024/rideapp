@@ -36,4 +36,8 @@ withDefaults(defineProps<{
   width: 86px;
   height: auto;
 }
+:global(html.dark) .brand-wordmark { filter: brightness(0) invert(1) opacity(0.92); }
+
+:global(html.dark) .brand-mark { filter: brightness(1.08) saturate(1.05); }
+
 </style>

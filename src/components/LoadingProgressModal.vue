@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { locationOutline } from 'ionicons/icons';
+import { checkmarkCircleOutline, compassOutline } from 'ionicons/icons';
 import { IonIcon } from '@ionic/vue';
 import RideProgressBar from './RideProgressBar.vue';
 
@@ -13,16 +13,36 @@ defineProps<{
 <template>
   <Transition name="loading-progress">
     <div v-if="visible" class="loading-progress-backdrop">
-      <section class="loading-progress-card" role="status" aria-live="polite" aria-atomic="true">
-        <div class="loading-progress-brand">
-          <span class="loading-progress-pin" aria-hidden="true">
-            <ion-icon :icon="locationOutline"></ion-icon>
+      <section
+        class="loading-progress-card"
+        :class="{ 'is-complete': phase === 'complete' }"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <span class="loading-progress-glow" aria-hidden="true"></span>
+
+        <header class="loading-progress-header">
+          <div class="loading-progress-brand">
+            <span class="loading-progress-pin" aria-hidden="true">
+              <ion-icon :icon="phase === 'complete' ? checkmarkCircleOutline : compassOutline"></ion-icon>
+            </span>
+            <span class="loading-progress-wordmark">
+              RIDE
+              <small>{{ phase === 'complete' ? 'Journey ready' : 'Journey in progress' }}</small>
+            </span>
+          </div>
+          <span class="loading-progress-state">
+            <span class="loading-progress-state-dot" aria-hidden="true"></span>
+            {{ phase === 'complete' ? 'Ready' : 'Loading' }}
           </span>
-          <span class="loading-progress-wordmark">RIDE</span>
-        </div>
-        <RideProgressBar :phase="phase" label="Action progress" />
-        <span class="loading-progress-state" aria-live="polite">{{ phase === 'complete' ? '100%' : 'Loading…' }}</span>
+        </header>
+
         <p class="loading-progress-message">{{ message }}</p>
+        <RideProgressBar :phase="phase" label="Action progress" />
+        <p class="loading-progress-hint">
+          {{ phase === 'complete' ? 'You are all set. Continuing…' : 'Hang tight while we prepare everything.' }}
+        </p>
       </section>
     </div>
   </Transition>
@@ -35,89 +55,191 @@ defineProps<{
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 1rem;
-  background: rgb(31 48 35 / 25%);
-  backdrop-filter: blur(2px);
+  padding: clamp(1rem, 4vw, 2rem);
+  background:
+    radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--brand-accent) 16%, transparent), transparent 46%),
+    rgb(7 27 18 / 56%);
+  backdrop-filter: blur(8px) saturate(115%);
+  -webkit-backdrop-filter: blur(8px) saturate(115%);
 }
 
 .loading-progress-card {
+  position: relative;
   display: grid;
-  width: min(310px, 100%);
-  justify-items: center;
+  width: min(370px, 100%);
   gap: 0.85rem;
-  padding: 1.35rem 1.4rem 1.2rem;
-  border: 1px solid rgb(255 255 255 / 88%);
-  border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 18px 52px rgb(31 57 38 / 20%);
-  color: var(--charcoal, #29332d);
+  overflow: hidden;
+  padding: clamp(1.25rem, 4vw, 1.6rem);
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 22%, var(--border));
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow:
+    0 40px 100px -34px rgb(7 27 18 / 62%),
+    var(--shadow-lg);
+  color: var(--text-primary);
+}
+
+.loading-progress-glow {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 140px;
+  background: radial-gradient(90% 100% at 50% 0%, color-mix(in srgb, var(--brand-accent) 20%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+.loading-progress-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
 }
 
 .loading-progress-brand {
   display: flex;
+  min-width: 0;
   align-items: center;
-  gap: 0.45rem;
-  color: var(--forest, #355e3b);
+  gap: 0.7rem;
 }
 
 .loading-progress-pin {
+  position: relative;
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
   place-items: center;
-  border-radius: 50%;
-  background: #eff7ee;
-  color: #557b5b;
-  font-size: 1.2rem;
-  animation: loading-progress-bob 1.1s ease-in-out infinite;
+  border-radius: 15px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-mid));
+  box-shadow: 0 12px 26px -12px color-mix(in srgb, var(--brand) 65%, transparent);
+  color: var(--on-brand);
+  font-size: 1.35rem;
+}
+
+.loading-progress-pin::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 40%, transparent);
+  border-radius: 19px;
+  animation: loading-progress-pulse 1.7s var(--ease-out) infinite;
 }
 
 .loading-progress-wordmark {
-  font-family: 'Poppins', sans-serif;
-  font-size: 1rem;
+  display: grid;
+  gap: 0.18rem;
+  color: var(--text-strong);
+  font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
+  line-height: 1;
 }
 
-.loading-progress-card :deep(.ride-progress-bar) {
+.loading-progress-wordmark small {
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.loading-progress-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.36rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 22%, var(--border));
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--brand-soft) 62%, transparent);
+  color: var(--brand-accent);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.loading-progress-state-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-accent);
+  animation: loading-progress-blink 1.2s ease-in-out infinite;
+}
+
+.loading-progress-message {
+  position: relative;
+  margin: 0.1rem 0 0;
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: clamp(1.12rem, 2vw, 1.3rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.loading-progress-card :deep(.ride-progress-bar.ride-progress-bar) {
   position: relative;
   inset: auto;
   width: 100%;
-  height: 6px;
-  border-radius: 999px;
+  height: 8px;
   overflow: hidden;
+  border-radius: var(--radius-pill);
 }
 
 .loading-progress-card :deep(.ride-progress-bar__track) {
   border-radius: inherit;
-  background: #e7f0e5;
+  background: color-mix(in srgb, var(--brand-soft) 85%, transparent);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 6%);
 }
 
-.loading-progress-message {
+.loading-progress-card :deep(.ride-progress-bar__indicator) {
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--brand-accent), var(--accent));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.loading-progress-hint {
   margin: 0;
-  color: #52645a;
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.4;
-  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
-.loading-progress-state {
-  margin-top: -0.55rem;
-  color: #557b5b;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
+.loading-progress-card.is-complete {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+}
+
+.loading-progress-card.is-complete .loading-progress-pin {
+  background: linear-gradient(135deg, var(--success), var(--brand-accent));
+}
+
+.loading-progress-card.is-complete .loading-progress-pin::after {
+  opacity: 0;
+  animation: none;
+}
+
+.loading-progress-card.is-complete .loading-progress-state {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.loading-progress-card.is-complete .loading-progress-state-dot {
+  background: var(--success);
+  animation: none;
 }
 
 .loading-progress-enter-active,
 .loading-progress-leave-active {
-  transition: opacity 140ms ease;
+  transition: opacity 160ms ease;
 }
 
 .loading-progress-enter-active .loading-progress-card,
 .loading-progress-leave-active .loading-progress-card {
-  transition: transform 140ms ease;
+  transition:
+    transform 220ms var(--ease-out),
+    opacity 220ms var(--ease-out);
 }
 
 .loading-progress-enter-from,
@@ -127,15 +249,65 @@ defineProps<{
 
 .loading-progress-enter-from .loading-progress-card,
 .loading-progress-leave-to .loading-progress-card {
-  transform: translateY(5px) scale(0.98);
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
 }
 
-@keyframes loading-progress-bob {
-  50% { transform: translateY(-3px); }
+@keyframes loading-progress-pulse {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+
+  70% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes loading-progress-blink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+
+@media (max-width: 420px) {
+  .loading-progress-card {
+    width: 100%;
+    border-radius: var(--radius-lg);
+  }
+
+  .loading-progress-header {
+    gap: 0.6rem;
+  }
+
+  .loading-progress-pin {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    font-size: 1.2rem;
+  }
+
+  .loading-progress-state {
+    padding: 0.32rem 0.5rem;
+    font-size: 0.54rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loading-progress-pin {
+  .loading-progress-pin::after,
+  .loading-progress-state-dot {
     animation: none;
   }
 

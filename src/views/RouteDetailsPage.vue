@@ -6,8 +6,27 @@ import { useRoute, useRouter } from 'vue-router';
 import RideBottomNav from '../components/RideBottomNav.vue';
 import RideAppHeader from '../components/RideAppHeader.vue';
 import { completePlanningStep } from '../data/flowProgress';
-import { CALAPAN_CITY, getCalapanPlaces } from '../data/calapan';
+import { CALAPAN_CITY } from '../data/calapan';
+import { getRideDestination, getRideDestinations } from '../data/destinations';
+import { getExploreCategoryListings, getExploreListingId, getExploreListingLocation } from '../data/exploreListings';
 import { ITINERARY_DRAFT_KEY, loadItinerary, SAVED_ITINERARY_KEY } from '../data/itinerary';
+
+type RoutePlace = { id: string; name: string; address: string; city: string; latitude: number | null; longitude: number | null };
+function findRoutePlace(id: string): RoutePlace | null {
+  if (!id) return null;
+  const direct = getRideDestination(id);
+  if (direct) return { id: direct.id, name: direct.name, address: direct.address, city: direct.city || 'Calapan City', latitude: direct.latitude, longitude: direct.longitude };
+  for (const [category, listings] of Object.entries(getExploreCategoryListings())) {
+    for (const listing of listings) {
+      const lid = getExploreListingId(listing.name, category);
+      if (lid !== id) continue;
+      const place = getRideDestination(lid);
+      const loc = getExploreListingLocation(listing, category, place);
+      return { id, name: listing.name, address: loc.value, city: 'Calapan City', latitude: place?.latitude ?? null, longitude: place?.longitude ?? null };
+    }
+  }
+  return null;
+}
 import { updateTrip } from '../data/trips';
 import { showError, showSuccess } from '../composables/feedback';
 
@@ -21,28 +40,28 @@ const modes: Record<Mode, { name: string; icon: string }> = {
 };
 const route = useRoute();
 const router = useRouter();
-const places = getCalapanPlaces();
+const knownIds = new Set(getRideDestinations().map((p) => p.id));
 const safeQuery = (value: unknown) => typeof value === 'string' ? value : '';
 const flowTripId = computed(() => safeQuery(route.query.tripId) || undefined);
 const fromId = safeQuery(route.query.from);
 const toId = safeQuery(route.query.to);
-const fromPlace = computed(() => places.find((place) => place.id === fromId));
-const toPlace = computed(() => places.find((place) => place.id === toId));
-const fromName = computed(() => fromPlace.value?.name ?? (fromId && !places.some((place) => place.id === fromId) ? fromId.slice(0, 100) : 'Starting point unavailable'));
+const fromPlace = computed(() => findRoutePlace(fromId));
+const toPlace = computed(() => findRoutePlace(toId));
+const fromName = computed(() => fromPlace.value?.name ?? (fromId && !knownIds.has(fromId) ? fromId.slice(0, 100) : 'Starting point unavailable'));
 const toName = computed(() => toPlace.value?.name ?? 'Destination unavailable');
 const modeId = safeQuery(route.query.mode) as Mode;
 const mode = computed(() => modes[modeId]);
-const supported = computed(() => modeId === 'tricycle' && Boolean(fromPlace.value && toPlace.value && fromId !== toId));
+const supported = computed(() => modeId === 'tricycle' && Boolean(fromPlace.value?.latitude != null && fromPlace.value?.longitude != null && toPlace.value?.latitude != null && toPlace.value?.longitude != null && fromId !== toId));
 const fareReference = computed(() => modeId === 'tricycle' ? '₱15 minimum for the first 2 km; add ₱1 per additional kilometer.' : 'Fare information unavailable for this trip.');
 const routeInfo = computed(() => modeId === 'natsco'
   ? 'NATSCO is documented on the Calapan City–Naujan corridor. Its boarding and drop-off points for this selected trip are not verified.'
   : modeId === 'vodactco'
     ? 'VODACTCO is documented separately on the Calapan City–Victoria corridor. Its boarding and drop-off points for this selected trip are not verified.'
     : safeQuery(route.query.routeInfo) || 'Route instructions and boarding points are not available in the verified local guide.');
-const mapUrl = computed(() => fromPlace.value && toPlace.value
+const mapUrl = computed(() => (fromPlace.value?.latitude != null && fromPlace.value?.longitude != null && toPlace.value?.latitude != null && toPlace.value?.longitude != null)
   ? `https://www.google.com/maps/dir/?api=1&origin=${fromPlace.value.latitude},${fromPlace.value.longitude}&destination=${toPlace.value.latitude},${toPlace.value.longitude}&travelmode=transit`
   : '');
-const itineraryStops = safeQuery(route.query.stops).split(',').filter((id) => places.some((place) => place.id === id));
+const itineraryStops = safeQuery(route.query.stops).split(',').filter(Boolean);
 const passengers = Math.min(50, Math.max(1, Number(route.query.passengers) || 1));
 const saved = ref(false);
 const detailQuery = computed(() => ({ from: fromId, to: toId, mode: modeId, passengers: String(passengers), stops: itineraryStops.join(','), tripId: flowTripId.value }));

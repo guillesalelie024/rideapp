@@ -342,10 +342,17 @@ describe('HomePage.vue', () => {
     const { wrapper } = await mountWithRouter(HomePage, '/home', baseRoutes());
 
     expect(wrapper.findAll('.app-quick-item').map((item) => item.text())).toEqual(
-      expect.arrayContaining(['Commute', 'Explore', 'Near Me', 'Surprise']),
+      expect.arrayContaining(['Commute', 'Explore', 'Weather', 'Near Me', 'Surprise']),
     );
     expect(wrapper.findAll('.app-list-card').length).toBeGreaterThan(0);
     expect(wrapper.text()).toContain('Calapan City Plaza');
+    expect(wrapper.text()).toContain('Discover top places in Calapan City!');
+    expect(wrapper.find('.dest-deck').exists()).toBe(true);
+    const firstCard = wrapper.get('.dest-list-card');
+    expect(firstCard.find('.dest-list-badge').text()).toBeTruthy();
+    expect(firstCard.find('.dest-list-fav').exists()).toBe(true);
+    expect(firstCard.find('.dest-list-desc').text().length).toBeGreaterThan(0);
+    expect(firstCard.find('.dest-list-open').text()).toContain('View Details');
 
     await wrapper.get('.app-search input').setValue('Feraren Hills');
     expect(wrapper.text()).toContain('Feraren Hills');
@@ -395,6 +402,18 @@ describe('HomePage.vue', () => {
     const weather = wrapper.get('.app-weather');
     expect(weather.exists()).toBe(true);
     expect(weather.text()).toContain('29');
+  });
+
+  test('collects weather notifications in the bell panel', async () => {
+    const { wrapper } = await mountWithRouter(HomePage, '/home', baseRoutes());
+
+    const bell = wrapper.get('.home-bell');
+    expect(bell.attributes('aria-label')).toContain('Weather notifications');
+    expect(wrapper.find('.home-bell-badge').exists()).toBe(true);
+
+    await bell.trigger('click');
+    expect(wrapper.find('.home-notifications').exists()).toBe(true);
+    expect(wrapper.text()).toContain('Calapan weather update');
   });
 });
 
@@ -450,7 +469,11 @@ describe('NearMePage.vue', () => {
 
     const { wrapper } = await mountWithRouter(NearMePage, '/near-me', baseRoutes());
     expect(wrapper.findAll('.near-place').length).toBe(RIDE_DESTINATIONS.length);
+    expect(wrapper.findAll('.near-tile').length).toBe(RIDE_DESTINATIONS.length);
+    expect(wrapper.find('.near-strip').exists()).toBe(true);
+    expect(wrapper.findAll('.near-nav').length).toBe(2);
     expect(wrapper.text()).toContain('Distance available after locating');
+    expect(wrapper.text()).toContain('Tap to locate');
 
     await wrapper.get('.near-locate').trigger('click');
     await flushPromises();
