@@ -15,7 +15,22 @@ const port = Number(process.env.PORT || process.env.API_PORT || 3001);
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is required. Copy .env.example to .env and configure PostgreSQL.');
 
-const pool = new Pool({ connectionString: databaseUrl, ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: true } : undefined });
+
+const ssl = process.env.PGSSLMODE === 'require'
+  ? {
+      ca: await readFile(
+        new URL('./prod-ca-2021.crt', import.meta.url),
+        'utf8'
+      ),
+      rejectUnauthorized: true,
+    }
+  : undefined;
+
+const pool = new Pool({
+  connectionString: databaseUrl,
+  ssl,
+});
+
 app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
