@@ -29,6 +29,7 @@ import { getRideDestination, getRideDestinations, type RideDestination } from '.
 import { getExploreCategoryListings, getExploreListingId, getExploreListingLocation } from '../data/exploreListings';
 import { loadItinerary, SAVED_ITINERARY_KEY } from '../data/itinerary';
 import { loadTrips, type TripRecord } from '../data/trips';
+import { loadSavedIds, toggleSavedPlace, SAVED_PLACES_UPDATED_EVENT } from '../data/savedPlaces';
 import { getDistanceInKilometers } from '../data/calapan';
 import {
   CurrentLocationError,
@@ -187,14 +188,7 @@ const searchResults = computed<SearchResult[]>(() => {
 });
 
 function refreshSavedData() {
-  try {
-    const stored = localStorage.getItem('ride.saved-destination-ids');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) savedPlaceIds.value = parsed.filter((id: unknown) => typeof id === 'string' && places.some((p) => p.id === id));
-      else savedPlaceIds.value = [];
-    } else savedPlaceIds.value = [];
-  } catch { savedPlaceIds.value = []; }
+  try { savedPlaceIds.value = loadSavedIds().filter((id) => places.some((p) => p.id === id)); } catch { savedPlaceIds.value = []; }
   try { savedItinerary.value = loadItinerary(SAVED_ITINERARY_KEY); } catch { savedItinerary.value = null; }
   try { trips.value = loadTrips(); } catch { trips.value = []; }
 }
@@ -204,10 +198,12 @@ onMounted(() => {
   refreshWeather();
   void refreshLocation(false);
   weatherRefreshInterval = window.setInterval(refreshWeather, 15 * 60 * 1000);
+  window.addEventListener(SAVED_PLACES_UPDATED_EVENT, refreshSavedData);
 });
 onUnmounted(() => {
   locationRequestId += 1;
   if (weatherRefreshInterval) window.clearInterval(weatherRefreshInterval);
+  window.removeEventListener(SAVED_PLACES_UPDATED_EVENT, refreshSavedData);
 });
 onIonViewWillEnter(refreshSavedData);
 
@@ -252,11 +248,10 @@ function openSearchResult(result: SearchResult) {
 function openFirstSearchResult() { const first = searchResults.value[0]; if (first) openSearchResult(first); }
 function openPlace(p: RideDestination) { searchQuery.value = ''; router.push({ name: 'DestinationDetails', params: { id: p.id } }); }
 function toggleSaved(p: RideDestination) {
-  const next = savedPlaceIds.value.includes(p.id)
-    ? savedPlaceIds.value.filter((id) => id !== p.id)
-    : [...savedPlaceIds.value, p.id];
-  localStorage.setItem('ride.saved-destination-ids', JSON.stringify(next));
-  savedPlaceIds.value = next;
+  try {
+    toggleSavedPlace(p.id);
+    savedPlaceIds.value = loadSavedIds();
+  } catch { /* ignore storage errors */ }
 }
 
 function toggleThemeMode() {

@@ -34,6 +34,12 @@ type SavedMeta = Record<string, { savedAt?: string }>;
 function nowIso() { return new Date().toISOString(); }
 function notify() { window.dispatchEvent(new CustomEvent(SAVED_PLACES_UPDATED_EVENT)); }
 
+const pendingRemoteWrites = new Set<Promise<unknown>>();
+function trackRemoteWrite(promise: Promise<unknown>) {
+  pendingRemoteWrites.add(promise);
+  void promise.then(() => pendingRemoteWrites.delete(promise), () => pendingRemoteWrites.delete(promise));
+}
+
 function readJson<T>(key: string, fallback: T): T {
   try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) as T : fallback; } catch { return fallback; }
 }
@@ -144,12 +150,12 @@ export function toggleSavedPlace(id: string, curated?: CuratedSavedPlace): { sav
     const curatedMap = loadCuratedFavorites(); delete curatedMap[id]; saveCuratedFavorites(curatedMap);
     removeSavedMeta(id);
     const cp = loadCollectionPlaces(); for (const cid of Object.keys(cp)) cp[cid] = cp[cid].filter((x) => x !== id); saveCollectionPlaces(cp);
-    if (getRideSession()) void removeSavedPlace(id).catch(() => {});
+    if (getRideSession()) trackRemoteWrite(removeSavedPlace(id).catch(() => {}));
     notify(); return { saved: false };
   }
   saveSavedIds([...ids, id]); touchSavedMeta(id);
   if (curated) { const curatedMap = loadCuratedFavorites(); curatedMap[id] = { ...curated, savedAt: curatedMap[id]?.savedAt ?? nowIso() }; saveCuratedFavorites(curatedMap); }
-  if (getRideSession()) void saveSavedPlace(id, curated ? { kind: 'curated', name: curated.name, category: curated.category, note: curated.note } : { kind: 'destination' }).catch(() => {});
+  if (getRideSession()) trackRemoteWrite(saveSavedPlace(id, curated ? { kind: 'curated', name: curated.name, category: curated.category, note: curated.note } : { kind: 'destination' }).catch(() => {}));
   notify(); return { saved: true };
 }
 
@@ -197,6 +203,7 @@ export async function togglePlaceInCollection(collectionId: string, placeId: str
 export async function syncSavedFromAccount(): Promise<void> {
   if (!getRideSession()) return;
   try {
+    if (pendingRemoteWrites.size) await Promise.allSettled([...pendingRemoteWrites]);
     const payload: SavedPlacesPayload = await fetchSavedPlaces();
     const ids = payload.places.map((p) => p.placeId);
     saveSavedIds(ids);

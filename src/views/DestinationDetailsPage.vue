@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { IonContent, IonIcon, IonPage } from '@ionic/vue';
 import {
   businessOutline,
@@ -26,6 +26,7 @@ import { getCuratedNearbyFood } from '../data/curatedNearbyPlaces';
 import { completePlanningStep, ensureDraftTripId } from '../data/flowProgress';
 import { showError, showSuccess } from '../composables/feedback';
 import { getExploreListingId, getExploreListingLocation } from '../data/exploreListings';
+import { loadSavedIds, toggleSavedPlace, SAVED_PLACES_UPDATED_EVENT } from '../data/savedPlaces';
 
 const CALAPAN_CENTER = { latitude: 13.4147715, longitude: 121.1803193 };
 
@@ -45,8 +46,6 @@ const curatedListing = computed(() => {
 });
 const favoriteIds = ref<string[]>([]);
 const imageFailed = ref(false);
-const favoriteStorageKey = 'ride.saved-destination-ids';
-const curatedFavoritesStorageKey = 'ride.saved-curated-destinations';
 const curatedNearbyFood = computed(() =>
   getCuratedNearbyFood(curatedListing.value?.name ?? selectedPlace.value?.name ?? '')
 );
@@ -145,17 +144,12 @@ function eatDirectionsUrl(place: RideDestination): string {
   return `https://www.openstreetmap.org/directions?to=${encodeURIComponent(`${place.latitude},${place.longitude}`)}`;
 }
 
-try {
-  const saved = localStorage.getItem(favoriteStorageKey);
-  if (saved) {
-    const parsed: unknown = JSON.parse(saved);
-    if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'string')) {
-      favoriteIds.value = parsed;
-    }
-  }
-} catch {
-  showError('Saved places could not be loaded.');
+function refreshFavoriteState() {
+  try { favoriteIds.value = loadSavedIds(); } catch { favoriteIds.value = []; }
 }
+refreshFavoriteState();
+onMounted(() => { refreshFavoriteState(); window.addEventListener(SAVED_PLACES_UPDATED_EVENT, refreshFavoriteState); });
+onUnmounted(() => { window.removeEventListener(SAVED_PLACES_UPDATED_EVENT, refreshFavoriteState); });
 
 const favoritePlaceId = computed(() => selectedPlace.value?.id ?? (curatedListing.value ? String(route.params.id) : ''));
 const isFavorite = computed(() => Boolean(favoritePlaceId.value && favoriteIds.value.includes(favoritePlaceId.value)));
@@ -178,25 +172,12 @@ const categoryIcon = computed(() => {
 function toggleFavorite() {
   const placeId = favoritePlaceId.value;
   if (!placeId) return;
-  const next = isFavorite.value ? favoriteIds.value.filter((id) => id !== placeId) : [...favoriteIds.value, placeId];
-  favoriteIds.value = next;
   try {
-    localStorage.setItem(favoriteStorageKey, JSON.stringify(next));
-    if (curatedListing.value) {
-      const rawCuratedFavorites = localStorage.getItem(curatedFavoritesStorageKey);
-      const parsedCuratedFavorites: unknown = rawCuratedFavorites ? JSON.parse(rawCuratedFavorites) : {};
-      const curatedFavorites = parsedCuratedFavorites && typeof parsedCuratedFavorites === 'object' && !Array.isArray(parsedCuratedFavorites)
-        ? { ...parsedCuratedFavorites as Record<string, { name: string; category: string; note: string }> }
-        : {};
-      if (next.includes(placeId)) {
-        curatedFavorites[placeId] = curatedListing.value;
-      } else {
-        delete curatedFavorites[placeId];
-      }
-      localStorage.setItem(curatedFavoritesStorageKey, JSON.stringify(curatedFavorites));
-    }
-    const placeName = selectedPlace.value?.name ?? curatedListing.value?.name ?? 'Place';
-    showSuccess(`${placeName} ${next.includes(placeId) ? 'saved' : 'removed'}.`);
+    const listing = curatedListing.value;
+    const result = toggleSavedPlace(placeId, listing ? { name: listing.name, category: listing.category, note: listing.note } : undefined);
+    refreshFavoriteState();
+    const placeName = selectedPlace.value?.name ?? listing?.name ?? 'Place';
+    showSuccess(`${placeName} ${result.saved ? 'saved' : 'removed'}.`);
   } catch {
     showError('Could not update saved places.');
   }

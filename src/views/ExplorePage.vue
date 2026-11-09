@@ -28,6 +28,7 @@ import { getDistanceInKilometers } from '../data/calapan';
 import { detectCurrentLocation, loadCachedCurrentLocation, type CurrentLocation } from '../data/currentLocation';
 import { getRideDestination, getRideDestinations } from '../data/destinations';
 import { EXPLORE_CATEGORY_LISTINGS, getExploreListingId, getExploreListingLocation, type ExploreListing } from '../data/exploreListings';
+import { loadSavedIds, loadCuratedFavorites, toggleSavedPlace, SAVED_PLACES_UPDATED_EVENT } from '../data/savedPlaces';
 
 const categoryOptions = [
   { name: 'All Places', icon: compassOutline },
@@ -81,21 +82,16 @@ const curatedFavorites = ref<Record<string, { name: string; category: string; no
 const currentLocation = ref<CurrentLocation | null>(loadCachedCurrentLocation());
 const geocodedCoords = ref<Record<string, { latitude: number; longitude: number }>>({});
 const geocodeInFlight = new Set<string>();
-const favoriteStorageKey = 'ride.saved-destination-ids';
-const curatedFavoritesStorageKey = 'ride.saved-curated-destinations';
 const geocodeCacheKey = 'ride.explore-geocode-v1';
 
 function refreshSavedData() {
   try {
-    const raw = localStorage.getItem(favoriteStorageKey);
-    favoriteIds.value = raw ? JSON.parse(raw).filter((id: unknown) => typeof id === 'string') : [];
+    favoriteIds.value = loadSavedIds();
   } catch {
     favoriteIds.value = [];
   }
   try {
-    const raw = localStorage.getItem(curatedFavoritesStorageKey);
-    const parsed = raw ? JSON.parse(raw) : {};
-    curatedFavorites.value = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    curatedFavorites.value = loadCuratedFavorites();
   } catch {
     curatedFavorites.value = {};
   }
@@ -123,10 +119,12 @@ onMounted(() => {
     })
     .catch(() => undefined);
   window.addEventListener('focus', refreshSavedData);
+  window.addEventListener(SAVED_PLACES_UPDATED_EVENT, refreshSavedData);
 });
 
 onUnmounted(() => {
   window.removeEventListener('focus', refreshSavedData);
+  window.removeEventListener(SAVED_PLACES_UPDATED_EVENT, refreshSavedData);
 });
 const filteredAllPlaces = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase();
@@ -276,17 +274,11 @@ function toggleListingSaved(listing: CategoryListing) {
   const category = listingCategory(listing);
   const knownPlace = getListingDestination(listing);
   const id = listingId(listing);
-  const next = favoriteIds.value.includes(id)
-    ? favoriteIds.value.filter((x) => x !== id)
-    : [...favoriteIds.value, id];
-  favoriteIds.value = next;
-  try { localStorage.setItem(favoriteStorageKey, JSON.stringify(next)); } catch { /* ignore storage errors */ }
-  if (!knownPlace) {
-    const curated = { ...curatedFavorites.value };
-    if (next.includes(id)) curated[id] = { name: listing.name, category, note: listing.note ?? '' };
-    else delete curated[id];
-    curatedFavorites.value = curated;
-    try { localStorage.setItem(curatedFavoritesStorageKey, JSON.stringify(curated)); } catch { /* ignore storage errors */ }
+  try {
+    toggleSavedPlace(id, knownPlace ? undefined : { name: listing.name, category, note: listing.note ?? '' });
+    refreshSavedData();
+  } catch {
+    statusMessage.value = 'Could not update saved places.';
   }
 }
 

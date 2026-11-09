@@ -11,8 +11,9 @@ export interface CalapanWeatherConditions {
   precipitationMm: number;
 }
 
-const CALAPAN_WEATHER_API = '/api/weather/calapan';
-
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+const CALAPAN_WEATHER_API = `${API_BASE}/weather/calapan`;
+const OPEN_METEO_WEATHER_API = 'https://api.open-meteo.com/v1/forecast?latitude=13.4148&longitude=121.1803&current=temperature_2m%2Capparent_temperature%2Crelative_humidity_2m%2Cweather_code%2Cwind_speed_10m%2Cprecipitation&hourly=precipitation_probability%2Cprecipitation&forecast_days=2&timezone=Asia%2FManila';
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -39,19 +40,74 @@ function isCalapanWeatherConditions(value: unknown): value is CalapanWeatherCond
     && isFiniteNumber(value.precipitationMm);
 }
 
-export async function fetchCalapanWeather(): Promise<CalapanWeatherConditions> {
-  const response = await fetch(CALAPAN_WEATHER_API);
-  const body: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const message = isRecord(body) && isText(body.error)
-      ? body.error
-      : `Calapan weather request failed (${response.status}).`;
-    throw new Error(message);
+function parseOpenMeteoConditions(body: unknown): CalapanWeatherConditions | null {
+  if (!isRecord(body)) return null;
+  const current = body.current;
+  const hourly = body.hourly;
+  if (!isRecord(current) || !isRecord(hourly)) return null;
+  if (!isText(current.time)
+    || !isFiniteNumber(current.temperature_2m)
+    || !isFiniteNumber(current.apparent_temperature)
+    || !isFiniteNumber(current.relative_humidity_2m)
+    || !isFiniteNumber(current.weather_code)
+    || !isFiniteNumber(current.wind_speed_10m)
+    || !isFiniteNumber(current.precipitation)
+    || !Array.isArray(hourly.time)
+    || !Array.isArray(hourly.precipitation_probability)
+    || !Array.isArray(hourly.precipitation)
+    || hourly.time.length !== hourly.precipitation_probability.length
+    || hourly.time.length !== hourly.precipitation.length) {
+    return null;
   }
-  if (!isCalapanWeatherConditions(body)) {
+  const currentHour = current.time.slice(0, 13);
+  const currentHourIndex = hourly.time.findIndex((hour) => isText(hour) && hour.startsWith(`${currentHour}:`));
+  if (currentHourIndex < 0) return null;
+  const rainChancePercent = hourly.precipitation_probability[currentHourIndex];
+  if (!isFiniteNumber(rainChancePercent)) return null;
+  return {
+    source: 'Open-Meteo',
+    location: 'Calapan City, Oriental Mindoro',
+    temperatureC: current.temperature_2m,
+    apparentTemperatureC: current.apparent_temperature,
+    humidityPercent: current.relative_humidity_2m,
+    weatherCode: current.weather_code,
+    windSpeedKmh: current.wind_speed_10m,
+    observedAt: current.time,
+    rainChancePercent,
+    precipitationMm: current.precipitation,
+  };
+}
+
+async function fetchCalapanWeatherDirect(): Promise<CalapanWeatherConditions> {
+  const response = await fetch(OPEN_METEO_WEATHER_API, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) {
+    throw new Error(`Calapan weather request failed (${response.status}).`);
+  }
+  const body: unknown = await response.json().catch(() => null);
+  const conditions = parseOpenMeteoConditions(body);
+  if (!conditions) {
     throw new Error('Calapan weather service returned invalid data.');
   }
-  return body;
+  return conditions;
+}
+
+export async function fetchCalapanWeather(): Promise<CalapanWeatherConditions> {
+  try {
+    const response = await fetch(CALAPAN_WEATHER_API, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(10000),
+    });
+    const body: unknown = await response.json().catch(() => null);
+    if (response.ok && isCalapanWeatherConditions(body)) return body;
+    throw new Error(isRecord(body) && isText(body.error)
+      ? body.error
+      : `Calapan weather request failed (${response.status}).`);
+  } catch {
+    return fetchCalapanWeatherDirect();
+  }
 }
 
 export function getDemoCalapanWeather(): CalapanWeatherConditions {
