@@ -11,7 +11,7 @@ import { fetchCalapanWeather } from './weather.mjs';
 const { Pool } = pg;
 const scrypt = promisify(scryptCallback);
 const app = express();
-const port = Number(process.env.API_PORT || 3001);
+const port = Number(process.env.PORT || process.env.API_PORT || 3001);
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is required. Copy .env.example to .env and configure PostgreSQL.');
 

@@ -128,6 +128,19 @@ function openLive() {
   }
 }
 
+function openReceipt() {
+  const id = tripRecordId.value?.trim();
+  if (!id) { showError('Receipt not available for this trip.'); return; }
+  void router.push({ name: 'TripCompletion', params: { id } }).catch(async (err) => {
+    if (err && typeof err === 'object' && 'type' in err) return;
+    try { await router.push(`/trip-completion/${encodeURIComponent(id)}`); }
+    catch (fallbackErr) {
+      if (fallbackErr && typeof fallbackErr === 'object' && 'type' in fallbackErr) return;
+      showError('Could not open trip receipt.');
+    }
+  });
+}
+
 function startTripAgain() {
   const existing = tripRecordId.value ? getTrip(tripRecordId.value) : null;
   if (!existing) { showError('Trip not found.'); return; }
@@ -259,7 +272,7 @@ function startTripAgain() {
                 </div>
                 <ion-icon :icon="chevronUpOutline" style="transform: rotate(90deg)"></ion-icon>
               </button>
-              <button v-else-if="tripStatus === 'completed'" class="ts-action-item ts-action-primary" type="button" @click="router.push({ name: 'TripCompletion', params: { id: tripRecordId } })">
+              <button v-else-if="tripStatus === 'completed'" class="ts-action-item ts-action-primary" type="button" @click="openReceipt">
                 <div class="ts-action-icon ts-action-icon-white"><ion-icon :icon="saveOutline"></ion-icon></div>
                 <div class="ts-action-text">
                   <strong>View Receipt</strong>

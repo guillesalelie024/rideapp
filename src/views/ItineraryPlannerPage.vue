@@ -7,7 +7,6 @@ import {
   chevronUpOutline,
   closeOutline,
   locationOutline,
-  saveOutline,
 } from 'ionicons/icons';
 import { useRoute, useRouter } from 'vue-router';
 import RideBottomNav from '../components/RideBottomNav.vue';
@@ -87,22 +86,41 @@ function loadPlannerDraft(): Itinerary {
   return draft;
 }
 
+function resetPlannerToEmpty() {
+  localStorage.removeItem(DRAFT_TRIP_ID_KEY);
+  localStorage.removeItem(`${ITINERARY_DRAFT_KEY}.route`);
+  localStorage.removeItem(ITINERARY_DRAFT_KEY);
+  itinerary.value = createEmptyItinerary();
+  selectedRoute.value = null;
+  savedSuccessfully.value = false;
+  transportPickerOpen.value = false;
+}
+
 try {
-  itinerary.value = loadPlannerDraft();
-  selectedRoute.value = readSelectedRoute();
+  if (route.query.new === '1') resetPlannerToEmpty();
+  else {
+    itinerary.value = loadPlannerDraft();
+    selectedRoute.value = readSelectedRoute();
+  }
 } catch {
-  showError('Draft could not be loaded.');
+  itinerary.value = createEmptyItinerary();
+  selectedRoute.value = null;
 }
 onIonViewWillEnter(() => {
-  try { itinerary.value = loadPlannerDraft(); }
-  catch { showError('Draft could not be loaded.'); }
-  selectedRoute.value = readSelectedRoute();
-  savedSuccessfully.value = false;
   try {
-    travelPreferences.value = loadTravelPreferences();
+    if (route.query.new === '1') {
+      resetPlannerToEmpty();
+      void router.replace({ name: 'ItineraryPlanner' });
+    } else {
+      itinerary.value = loadPlannerDraft();
+      selectedRoute.value = readSelectedRoute();
+    }
   } catch {
-    travelPreferences.value = createEmptyTravelPreferences();
+    itinerary.value = createEmptyItinerary();
+    selectedRoute.value = null;
   }
+  savedSuccessfully.value = false;
+  travelPreferences.value = loadTravelPreferences();
 });
 
 const categorizedListings = computed(() => Object.entries(getExploreCategoryListings()).map(([category, listings]) => ({
@@ -231,7 +249,14 @@ function saveTrip() {
     localStorage.setItem(SAVED_TRIP_ID_KEY, savedRecord.id);
     if (selectedRoute.value) localStorage.setItem(`${SAVED_ITINERARY_KEY}.route`, JSON.stringify(selectedRoute.value));
     savedSuccessfully.value = true;
-    showSuccess('Your itinerary has been saved to My Trips on this device.', 'Itinerary Saved');
+    localStorage.removeItem(DRAFT_TRIP_ID_KEY);
+    localStorage.removeItem(`${ITINERARY_DRAFT_KEY}.route`);
+    localStorage.removeItem(ITINERARY_DRAFT_KEY);
+    showSuccess('Your itinerary has been saved to My Trips.', 'Itinerary Saved');
+    void router.replace({ name: 'Trips' }).catch((err) => {
+      if (err && typeof err === 'object' && 'type' in err) return;
+      void router.replace('/trips');
+    });
   } catch {
     showError('Could not save itinerary.');
   }
@@ -516,7 +541,6 @@ const budgetLabel = computed(() => BUDGET_PREFERENCES.find((b) => b.id === trave
                 <span>Plan Route &amp; Fares</span>
               </button>
               <button class="plan-big-btn plan-btn-save" type="button" @click="saveTrip" :disabled="itineraryPlaces.length === 0">
-                <ion-icon :icon="saveOutline"></ion-icon>
                 <span>{{ savedSuccessfully ? 'Saved' : 'Save Itinerary' }}</span>
               </button>
             </div>

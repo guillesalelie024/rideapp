@@ -17,7 +17,7 @@ import RideBottomNav from '../components/RideBottomNav.vue';
 import RideAppHeader from '../components/RideAppHeader.vue';
 import { getRideDestinations } from '../data/destinations';
 import { getItineraryStops, ITINERARY_DRAFT_KEY, saveItinerary } from '../data/itinerary';
-import { DRAFT_TRIP_ID_KEY, getTrip, replaceTrips, type TripRecord } from '../data/trips';
+import { DRAFT_TRIP_ID_KEY, getTrip, putTrip, type TripRecord } from '../data/trips';
 import { fetchAccountTrips, getRideSession } from '../data/api';
 import { fetchTripRatings, submitTripRating, type TripRating } from '../data/api';
 import { showError, showSuccess } from '../composables/feedback';
@@ -57,9 +57,13 @@ function goToTrips() {
 
 async function loadReceipt() {
   const requestId = ++receiptRequest;
-  const id = String(Array.isArray(route.params.id) ? route.params.id[0] : route.params.id || '');
+  const id = decodeURIComponent(String(Array.isArray(route.params.id) ? route.params.id[0] : route.params.id || '')).trim();
   receiptLoading.value = true;
   try {
+    if (!id) {
+      trip.value = null;
+      return;
+    }
     trip.value = getTrip(id);
     tripRatings.value = [];
     if (trip.value) {
@@ -70,7 +74,14 @@ async function loadReceipt() {
       try {
         const remoteTrips = await fetchAccountTrips();
         if (requestId !== receiptRequest) return;
-        replaceTrips(remoteTrips);
+        const remoteTrip = remoteTrips.find((item) => item?.id === id) ?? null;
+        if (remoteTrip) {
+          try { putTrip(remoteTrip, false); } catch { /* keep receipt visible from remote data */ }
+          if (requestId !== receiptRequest) return;
+          trip.value = getTrip(id) ?? remoteTrip;
+          void loadTripRatings();
+          return;
+        }
       } catch {
         // keep local fallback below
       }
@@ -81,7 +92,6 @@ async function loadReceipt() {
         return;
       }
     }
-    if (requestId !== receiptRequest) return;
     trip.value = null;
   } catch {
     if (requestId !== receiptRequest) return;
@@ -219,8 +229,7 @@ function selectRating(value: number) {
 </script>
 
 <template>
-  <div class="tc-page-wrapper">
-    <ion-page>
+  <ion-page>
     <ion-content :fullscreen="true">
       <div class="tc-page">
         <RideAppHeader
@@ -402,10 +411,35 @@ function selectRating(value: number) {
           </section>
         </main>
 
+        <div v-if="tripRatings.length > 0 && !ratingSubmitted" class="existing-ratings">
+          <h3 class="ratings-title">Traveler Ratings</h3>
+          <div class="ratings-list">
+            <div
+              v-for="rating in tripRatings"
+              :key="rating.ratedAt"
+              class="rating-item"
+            >
+              <div class="rating-item-header">
+                <span class="rating-item-user">{{ rating.userName ?? 'A traveler' }}</span>
+                <span class="rating-item-date">{{ new Date(rating.ratedAt).toLocaleDateString() }}</span>
+              </div>
+              <div class="rating-item-stars">
+                <ion-icon
+                  v-for="n in 5"
+                  :key="n"
+                  :icon="starOutline"
+                  class="rating-item-star"
+                  :class="{ 'rating-item-star-active': rating.rating >= n }"
+                ></ion-icon>
+              </div>
+              <p v-if="rating.review" class="rating-item-review">{{ rating.review }}</p>
+            </div>
+          </div>
+        </div>
+
         <RideBottomNav active="trips" />
       </div>
     </ion-content>
-  </ion-page>
 
   <div v-if="ratingModalVisible || ratingSubmitted" class="rating-backdrop" @click.self="ratingModalVisible = false">
     <section class="rating-dialog" role="alertdialog" aria-modal="true" aria-labelledby="rating-title">
@@ -460,32 +494,7 @@ function selectRating(value: number) {
     </section>
   </div>
 
-  <div v-if="tripRatings.length > 0 && !ratingSubmitted" class="existing-ratings">
-    <h3 class="ratings-title">Traveler Ratings</h3>
-    <div class="ratings-list">
-      <div
-        v-for="rating in tripRatings"
-        :key="rating.ratedAt"
-        class="rating-item"
-      >
-        <div class="rating-item-header">
-          <span class="rating-item-user">{{ rating.userName ?? 'A traveler' }}</span>
-          <span class="rating-item-date">{{ new Date(rating.ratedAt).toLocaleDateString() }}</span>
-        </div>
-        <div class="rating-item-stars">
-          <ion-icon
-            v-for="n in 5"
-            :key="n"
-            :icon="starOutline"
-            class="rating-item-star"
-            :class="{ 'rating-item-star-active': rating.rating >= n }"
-          ></ion-icon>
-        </div>
-        <p v-if="rating.review" class="rating-item-review">{{ rating.review }}</p>
-      </div>
-    </div>
-  </div>
-  </div>
+  </ion-page>
 </template>
 
 <style scoped>
@@ -1116,6 +1125,14 @@ function selectRating(value: number) {
 
 .existing-ratings {
   margin-top: 24px;
+  padding: 0 20px;
+}
+
+@media (min-width: 640px) {
+  .existing-ratings {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
 }
 
 .ratings-title {

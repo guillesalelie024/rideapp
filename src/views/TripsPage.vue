@@ -135,15 +135,21 @@ async function openTrip(trip: TripRecordData) {
 }
 
 async function openReceipt(trip: TripRecordData) {
-  if (!trip?.id) {
+  const id = typeof trip?.id === 'string' ? trip.id.trim() : '';
+  if (!id) {
     showError('Receipt not available for this trip.');
     return;
   }
   try {
-    await router.push(`/trip-completion/${encodeURIComponent(trip.id)}`);
+    await router.push({ name: 'TripCompletion', params: { id } });
   } catch (err) {
     if (err && typeof err === 'object' && 'type' in err) return;
-    showError('Could not open trip receipt.');
+    try {
+      await router.push(`/trip-completion/${encodeURIComponent(id)}`);
+    } catch (fallbackErr) {
+      if (fallbackErr && typeof fallbackErr === 'object' && 'type' in fallbackErr) return;
+      showError('Could not open trip receipt.');
+    }
   }
 }
 
@@ -288,7 +294,7 @@ onIonViewWillEnter(fetchTrips);
               <h2 class="trips-overview-title">Ready for your next journey?</h2>
               <p class="trips-overview-text">Build a new itinerary and keep your adventures organized in one place.</p>
             </div>
-            <router-link to="/itinerary" class="trips-create-btn">
+            <router-link :to="{ name: 'ItineraryPlanner', query: { new: '1' } }" class="trips-create-btn">
               <ion-icon :icon="calendarOutline" aria-hidden="true"></ion-icon>
               <span>Create Itinerary</span>
             </router-link>
