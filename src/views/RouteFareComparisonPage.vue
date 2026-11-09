@@ -572,7 +572,7 @@ function reportCategoryLabel(category: string): string {
 .fare-endpoint-help-top { margin-bottom: 2px; }
 .fare-bar, .search-card.fare-bar, .search-card.home-search.app-search.fare-bar, .fare-section .search-card { display: flex; width: 100%; max-width: none; min-width: 0; min-height: 60px; box-sizing: border-box; align-self: stretch; }
 .fare-select-bar { position: relative; padding-right: 42px; }
-.fare-origin-select { flex: 1 1 auto; width: 100%; min-width: 0; min-height: 38px; padding-right: 8px; background: transparent; border: 0; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer; }
+.fare-origin-select { flex: 1 1 auto; width: 100%; min-width: 0; min-height: 38px; padding-right: 8px; background: transparent; border: 0; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer; font-size: 15px; line-height: 1.3; }
 .fare-select-caret { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--text-secondary); pointer-events: none; }
 .fare-route-error { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--danger-soft); color: var(--danger); font-size: 13px; }
 .place-conditions { display: flex; align-items: flex-start; gap: 10px; margin: -2px 2px 2px; padding: 10px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.4; }

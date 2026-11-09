@@ -641,6 +641,31 @@ function tripDateLabel() {
   z-index: 60;
 }
 
+@media (max-width: 560px) {
+  .home-notifications,
+  .ride-notif-panel--home {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top) + 62px) !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(360px, calc(100vw - 24px)) !important;
+    max-height: min(62vh, 420px);
+    border-radius: 18px;
+    transform: translateX(-50%) !important;
+  }
+  .home-notifications-head { padding: 12px 13px 10px; }
+  .home-notifications-head h2 { font-size: 17px; }
+  .home-notification { gap: 10px; padding: 10px 13px; }
+  .home-notification-icon { width: 32px; height: 32px; border-radius: 10px; font-size: 16px; }
+  .home-notification-copy strong { font-size: 12.5px; }
+  .home-notification-copy span { font-size: 11.5px; }
+  .home-notifications-empty { padding: 16px 14px; font-size: 12.5px; }
+  .home-notifications-foot { padding: 8px 10px; }
+  .home-bell,
+  :deep(.home-bell) { width: 42px !important; min-width: 42px !important; height: 42px !important; }
+  .home-bell ion-icon, :deep(.home-bell ion-icon), :deep(.home-bell .ride-notif-glyph) { font-size: 22px; width: 22px; height: 22px; }
+}
+
 .home-notifications-head {
   display: flex;
   align-items: center;
@@ -987,6 +1012,24 @@ function tripDateLabel() {
 .home-menu-panel a:hover,
 .home-menu-panel a:active {
   background: var(--surface-soft);
+}
+
+@media (max-width: 560px) {
+  .home-top { padding: calc(env(safe-area-inset-top) + 10px) 14px 4px; }
+  .home-top-actions { gap: 6px; }
+  .home-icon-btn { width: 42px; min-width: 42px; height: 42px; font-size: 22px; }
+  .home-icon-btn ion-icon { font-size: 22px; width: 22px; height: 22px; }
+  .home-avatar { width: 42px; min-width: 42px; height: 42px; }
+  .home-menu-panel {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 58px);
+    left: 12px;
+    right: 12px;
+    width: auto;
+    border-radius: 16px;
+    padding: 6px;
+  }
+  .home-menu-panel a { padding: 9px 10px; font-size: 13.5px; }
 }
 
 /* ---------- Hero ---------- */

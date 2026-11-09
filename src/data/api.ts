@@ -32,6 +32,9 @@ export function getRideSession(): RideSession | null {
 }
 
 export function storeRideSession(session: RideSession, remember = true) {
+  if (!session?.token || !session?.user?.id || !session.user.email) {
+    throw new Error('Sign-in response was invalid. Check the API server connection and try again.');
+  }
   localStorage.removeItem(AUTH_TOKEN_KEY);
   sessionStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_EXPIRY_KEY);
@@ -59,16 +62,22 @@ export function clearRideSession() {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = readToken();
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init.headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: {
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers,
+      },
+    });
+  } catch {
+    throw new Error('Could not connect to the RIDE server. Check your internet connection and API configuration.');
+  }
   const body = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) throw new Error(body?.error || `Request failed (${response.status}).`);
+  if (body == null && response.status !== 204) throw new Error('The server returned an invalid response. Check the API configuration.');
   return body as T;
 }
 

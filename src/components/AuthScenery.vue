@@ -32,7 +32,7 @@ const content = computed(() => {
   if (props.variant === 'recovery') {
     return {
       kicker: 'RIDE · FIND YOUR WAY BACK',
-      headline: 'Return to the Journey',
+      headline: ['Return to the', 'Journey'],
       tagline: 'A quiet step back to your account, then the road is yours again.',
       features: [
         { icon: shieldCheckmarkOutline, title: 'Secure Recovery', description: 'Reset links are private, time-limited, and single-use.' },
@@ -45,7 +45,7 @@ const content = computed(() => {
   if (props.variant === 'login') {
     return {
       kicker: 'RIDE · YOUR JOURNEY CONTINUES',
-      headline: 'Welcome Back to the Road',
+      headline: ['Welcome Back', 'to the Road'],
       tagline: 'Pick up where you left off and get back to the journeys you love.',
       features: [
         { icon: bookmarkOutline, title: 'Saved Trails', description: 'Your favorite routes, ready whenever you are.' },
@@ -57,7 +57,7 @@ const content = computed(() => {
 
   return {
     kicker: 'RIDE · GO FURTHER',
-    headline: 'Start Your Adventure Today',
+    headline: ['Start Your', 'Adventure Today'],
     tagline: 'New roads, great rides, and a community of fellow explorers are waiting.',
     features: [
       { icon: mapOutline, title: 'Curated Routes', description: 'Find scenic roads and off-the-beaten-path trails.' },
@@ -82,8 +82,10 @@ const content = computed(() => {
     <span class="auth-scenery-badge"><span></span> Forest Explorer</span>
     <div class="auth-scenery-copy">
       <p class="auth-scenery-kicker">{{ content.kicker }}</p>
-      <h2>{{ content.headline }}</h2>
-      <p>{{ content.tagline }}</p>
+      <h2>
+        <span v-for="(line, index) in content.headline" :key="line" class="auth-headline-line" :class="{ 'is-accent': index === content.headline.length - 1 }">{{ line }}</span>
+      </h2>
+      <p class="auth-scenery-tagline">{{ content.tagline }}</p>
       <ul class="auth-scenery-features" aria-label="RIDE features">
         <li v-for="feature in content.features" :key="feature.title">
           <span class="auth-scenery-feature-icon"><ion-icon :icon="feature.icon" aria-hidden="true"></ion-icon></span>
@@ -135,16 +137,16 @@ const content = computed(() => {
 .auth-scenery-art {
   z-index: -3;
   object-fit: cover;
-  object-position: center;
+  object-position: center 45%;
   transform: scale(1.01);
 }
 
 .auth-brand-panel--signup .auth-scenery-art {
-  object-position: center 52%;
+  object-position: center 48%;
 }
 
 .auth-brand-panel--recovery .auth-scenery-art {
-  object-position: center 45%;
+  object-position: center 40%;
 }
 
 .auth-scenery-shade {
@@ -225,15 +227,23 @@ const content = computed(() => {
   font-size: clamp(2rem, 2.9vw, 3.1rem);
   font-weight: 600;
   letter-spacing: -0.045em;
-  line-height: 1.05;
+  line-height: 1.03;
   text-wrap: balance;
 }
 
-.auth-scenery-copy > p:not(.auth-scenery-kicker) {
-  max-width: 26rem;
+.auth-headline-line {
+  display: block;
+}
+
+.auth-headline-line.is-accent {
+  color: var(--pale-green);
+}
+
+.auth-scenery-tagline {
+  max-width: 28rem;
   margin: 0.9rem 0 0;
-  color: rgb(255 255 255 / 78%);
-  font-size: 0.9rem;
+  color: rgb(255 255 255 / 82%);
+  font-size: 0.92rem;
   line-height: 1.6;
 }
 
@@ -315,79 +325,119 @@ const content = computed(() => {
 
 @media (max-width: 980px) {
   .auth-brand-panel {
-    min-height: 340px;
-    padding: 1.5rem clamp(1.25rem, 4vw, 2.5rem);
+    min-height: 0;
+    aspect-ratio: 16 / 10;
+    max-height: 42vh;
+    padding: 1rem clamp(1rem, 4vw, 1.5rem);
   }
 
   .auth-brand-panel::after {
-    inset: 0.6rem;
+    inset: 0.45rem;
+  }
+
+  .auth-scenery-art {
+    object-fit: cover;
+    object-position: center 28%;
+  }
+
+  .auth-brand-panel--signup .auth-scenery-art {
+    object-position: center 38%;
+  }
+
+  .auth-brand-panel--recovery .auth-scenery-art {
+    object-position: center 32%;
+  }
+
+  .auth-scenery-shade {
+    background:
+      linear-gradient(180deg, rgb(7 27 18 / 10%) 0%, rgb(7 27 18 / 18%) 28%, rgb(7 27 18 / 72%) 72%, rgb(7 27 18 / 92%) 100%),
+      radial-gradient(120% 95% at 18% 8%, transparent 38%, rgb(7 27 18 / 34%) 100%);
   }
 
   .auth-scenery-badge {
-    top: 1.5rem;
-    left: clamp(1.25rem, 4vw, 2.5rem);
+    top: 1rem;
+    left: clamp(1rem, 4vw, 1.5rem);
   }
 
   .auth-scenery-copy {
     max-width: 620px;
   }
 
-  .auth-scenery-copy h2 {
-    font-size: clamp(1.9rem, 5.6vw, 2.6rem);
+  .auth-scenery-kicker {
+    margin-bottom: 0.55rem;
+    font-size: 0.58rem;
   }
 
-  .auth-scenery-copy > p:not(.auth-scenery-kicker) {
-    max-width: 520px;
+  .auth-scenery-copy h2 {
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    line-height: 1.02;
+  }
+
+  .auth-scenery-tagline {
+    display: block;
+    max-width: 34rem;
     margin-top: 0.55rem;
     font-size: 0.84rem;
+    line-height: 1.5;
   }
 
-  .auth-scenery-features {
-    display: none;
-  }
-
+  .auth-scenery-features,
   .auth-scenery-route {
-    margin-top: 0.9rem;
+    display: none;
   }
 }
 
 @media (max-width: 560px) {
   .auth-brand-panel {
-    min-height: 240px;
-    padding: 1.15rem;
+    aspect-ratio: 10 / 11;
+    max-height: 44vh;
+    min-height: 250px;
+    padding: 0.9rem;
+    justify-content: flex-end;
   }
 
   .auth-brand-panel::after {
-    inset: 0.5rem;
+    inset: 0.4rem;
+  }
+
+  .auth-scenery-shade {
+    background:
+      linear-gradient(180deg, rgb(7 27 18 / 8%) 0%, rgb(7 27 18 / 14%) 22%, rgb(7 27 18 / 52%) 58%, rgb(7 27 18 / 90%) 100%);
   }
 
   .auth-scenery-badge {
-    top: 1.15rem;
-    left: 1.15rem;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.54rem;
+    display: none;
+  }
+
+  .auth-scenery-copy {
+    max-width: 100%;
   }
 
   .auth-scenery-kicker {
     margin-bottom: 0.45rem;
     font-size: 0.54rem;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.13em;
   }
 
   .auth-scenery-kicker::before {
-    width: 16px;
+    width: 14px;
   }
 
   .auth-scenery-copy h2 {
-    font-size: clamp(1.65rem, 8vw, 2.1rem);
+    font-size: clamp(1.7rem, 8.4vw, 2.2rem);
+    line-height: 1.02;
   }
 
-  .auth-scenery-copy > p:not(.auth-scenery-kicker) {
-    margin-top: 0.4rem;
-    font-size: 0.76rem;
+  .auth-scenery-tagline {
+    display: block;
+    max-width: 22rem;
+    margin-top: 0.55rem;
+    color: rgb(255 255 255 / 84%);
+    font-size: 0.8rem;
     line-height: 1.45;
   }
 
+  .auth-scenery-features,
   .auth-scenery-route {
     display: none;
   }

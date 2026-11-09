@@ -239,6 +239,25 @@ function toggleTheme() {
   cursor: pointer;
 }
 
+@media (max-width: 560px) {
+  .ride-app-header { padding: calc(env(safe-area-inset-top) + 10px) 14px 14px; }
+  .ride-app-header-top { margin-bottom: 12px; gap: 8px; }
+  .ride-app-header-actions { gap: 6px; }
+  .ride-app-profile-btn,
+  .ride-app-header-button,
+  .ride-app-header-actions :deep(.ride-app-notification-btn) {
+    width: 40px !important; min-width: 40px !important; height: 40px !important; font-size: 20px !important;
+  }
+  .ride-app-header-button ion-icon,
+  .ride-app-header-actions :deep(.ride-app-notification-btn ion-icon),
+  .ride-app-header-actions :deep(.ride-notif-glyph),
+  .ride-app-profile-btn :deep(.ride-profile-avatar),
+  .ride-app-profile-btn :deep(.ride-profile-avatar ion-icon) { font-size: 20px; width: 20px; height: 20px; }
+  .ride-app-header-actions :deep(.ride-notif-panel) {
+    position: fixed; top: calc(env(safe-area-inset-top) + 58px); left: 50% !important; right: auto !important; width: min(360px, calc(100vw - 24px)) !important; max-height: min(62vh, 420px); border-radius: 18px; transform: translateX(-50%) !important;
+  }
+}
+
 .ride-app-header-copy {
   display: flex;
   flex-direction: column;

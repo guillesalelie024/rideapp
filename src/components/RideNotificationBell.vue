@@ -324,4 +324,21 @@ watch(open, (v) => { if (v) sync(); });
 .ride-notif-modal-primary, .ride-notif-modal-secondary { flex: 1; min-height: 42px; border-radius: 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .ride-notif-modal-primary { border: 0; background: var(--brand-accent); color: var(--on-brand, #fff); }
 .ride-notif-modal-secondary { border: 1px solid var(--border); background: var(--surface-soft); color: var(--text-primary); }
+
+@media (max-width: 560px) {
+  .ride-notif-btn { width: 40px; min-width: 40px; height: 40px; font-size: 20px; }
+  .ride-notif-panel { position: fixed; top: calc(env(safe-area-inset-top) + 62px); left: 50% !important; right: auto !important; width: min(360px, calc(100vw - 24px)) !important; max-width: calc(100vw - 24px); max-height: min(62vh, 420px); border-radius: 18px; transform: translateX(-50%) !important; }
+  .ride-notif-head { padding: 12px 13px 10px; gap: 8px; }
+  .ride-notif-head h2 { font-size: 17px; }
+  .ride-notif-item { gap: 10px; padding: 10px 13px; }
+  .ride-notif-icon { width: 32px; height: 32px; border-radius: 10px; font-size: 16px; }
+  .ride-notif-copy strong { font-size: 12.5px; }
+  .ride-notif-copy span { font-size: 11.5px; }
+  .ride-notif-empty { padding: 16px 14px; font-size: 12.5px; }
+  .ride-notif-foot { padding: 8px 10px; }
+  .ride-notif-modal { padding: 12px; align-items: end; }
+  .ride-notif-modal-card { width: 100%; max-height: 78vh; overflow-y: auto; padding: 14px; border-radius: 18px; }
+  .ride-notif-modal-card h3 { font-size: 17px; }
+  .ride-notif-modal-detail, .ride-notif-modal-reminder, .ride-notif-modal-route, .ride-notif-modal-suggest { font-size: 12.5px; }
+}
 </style>

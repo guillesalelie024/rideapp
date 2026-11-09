@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IonContent, IonIcon, IonPage } from '@ionic/vue';
-import { arrowForwardOutline, busOutline, compassOutline, locationOutline, mapOutline } from 'ionicons/icons';
+import { busOutline, compassOutline, locationOutline, mapOutline } from 'ionicons/icons';
 import RideLogo from '../components/RideLogo.vue';
 </script>
 
@@ -28,10 +28,7 @@ import RideLogo from '../components/RideLogo.vue';
             </p>
 
             <div class="welcome-actions">
-              <router-link class="button-primary button-large welcome-cta-primary" to="/signup">
-                Get Started
-                <ion-icon :icon="arrowForwardOutline" aria-hidden="true"></ion-icon>
-              </router-link>
+              <router-link class="button-primary button-large welcome-cta-primary" to="/signup">Get Started</router-link>
               <router-link class="button-outline button-large" to="/login">Log In</router-link>
             </div>
 
@@ -256,15 +253,6 @@ import RideLogo from '../components/RideLogo.vue';
 .welcome-cta-primary {
   background: linear-gradient(135deg, var(--brand), var(--brand-mid));
   box-shadow: 0 16px 34px -16px color-mix(in srgb, var(--brand) 60%, transparent);
-}
-
-.welcome-cta-primary ion-icon {
-  font-size: 1.05rem;
-  transition: transform var(--transition-fast);
-}
-
-.welcome-cta-primary:hover ion-icon {
-  transform: translateX(3px);
 }
 
 .welcome-actions .button-outline {
@@ -545,11 +533,15 @@ import RideLogo from '../components/RideLogo.vue';
   }
 
   .welcome-actions {
-    gap: 0.6rem;
+    gap: 0.65rem;
   }
 
   .welcome-actions .button-large {
-    flex: 1 1 150px;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 46px;
+    padding: 0 1rem;
+    font-size: 0.88rem;
   }
 
   .feature-list {
@@ -608,10 +600,12 @@ import RideLogo from '../components/RideLogo.vue';
   .welcome-actions {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.55rem;
   }
 
   .welcome-actions .button-large {
     width: 100%;
+    min-height: 48px;
   }
 
   .welcome-tagline {

@@ -555,6 +555,12 @@ onBeforeUnmount(() => {
   .place-card { min-height: 154px; }
   .place-image-button { width: 112px; }
 }
+@media (max-width: 560px) {
+  .places-heading { align-items: stretch; flex-direction: column; gap: 8px; }
+  .radius-select { width: 100%; }
+  .radius-select select { width: 100%; max-width: none; min-height: 44px; padding-right: 34px; font-size: 14px; }
+  .radius-select ion-icon { font-size: 16px; }
+}
 @media (max-width: 390px) {
   .near-map { height: 300px; }
   .map-place-card { right: 9px; bottom: 29px; left: 9px; }

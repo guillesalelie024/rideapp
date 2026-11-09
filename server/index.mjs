@@ -20,7 +20,7 @@ app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  const allowed = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173').split(',').map((value) => value.trim());
+  const allowed = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173,capacitor://localhost,https://localhost').split(',').map((value) => value.trim());
   if (origin && allowed.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
