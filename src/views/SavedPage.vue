@@ -336,8 +336,8 @@ html.dark .sv-map-card { background: rgba(24,51,39,.92); color: var(--text-prima
 .sv-inline-actions button, .sv-inline-actions a { padding:6px 10px; border:1px solid var(--border); border-radius:10px; background: var(--surface); color: var(--text-body); font: 700 11px/1 var(--font-body); text-decoration:none; cursor:pointer; }
 .sv-map-empty { position:absolute; inset:0; display:grid; place-items:center; padding:24px; color: var(--text-secondary); text-align:center; }
 .sv-attrib { margin:8px 2px 0; color: var(--text-muted); font-size:11px; } .sv-attrib a { color: inherit; }
-.sv-backdrop { position:fixed; inset:0; z-index:50; display:grid; place-items:center; padding:20px; background: rgba(12,42,29,.45); }
-.sv-dialog { width:min(420px,100%); padding:20px; border-radius:22px; background: var(--surface); box-shadow: var(--shadow-lg); color: var(--text-primary); }
+.sv-backdrop { position:fixed; inset:0; z-index:50; display:grid; place-items:center; padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; background: rgba(12,42,29,.45); }
+.sv-dialog { width:min(420px,100%); max-height: calc(100dvh - 40px); overflow-y:auto; overscroll-behavior:contain; padding:20px; border-radius:22px; background: var(--surface); box-shadow: var(--shadow-lg); color: var(--text-primary); }
 .sv-dialog h3 { margin:0 0 8px; color: var(--text-strong); font: 600 22px/1.2 var(--font-display); } .sv-dialog p { margin:0; color: var(--text-secondary); line-height:1.5; } .sv-dialog-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
 .sv-field { display:grid; gap:8px; } .sv-field span { color: var(--text-secondary); font: 700 12px/1 var(--font-body); } .sv-field-inline { margin:8px 0 0 12px; }
 .sv-pick-row { display:flex; width:100%; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border:0; border-bottom:1px solid var(--border); background:transparent; color:inherit; text-align:left; cursor:pointer; }

@@ -550,13 +550,19 @@ onIonViewWillEnter(fetchTrips);
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: color-mix(in srgb, var(--brand-deep, #123) 28%, rgba(0,0,0,.45));
   backdrop-filter: blur(6px);
 }
 
 .trip-delete-dialog {
   width: min(100%, 420px);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 24px;

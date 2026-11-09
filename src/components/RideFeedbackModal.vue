@@ -107,7 +107,10 @@ onBeforeUnmount(() => {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: rgb(31 48 35 / 34%);
   backdrop-filter: blur(3px);
 }
@@ -116,6 +119,9 @@ onBeforeUnmount(() => {
   position: relative;
   display: grid;
   width: min(390px, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   justify-items: center;
   gap: .7rem;
   padding: 2rem 1.5rem 1.4rem;

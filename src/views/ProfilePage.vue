@@ -590,14 +590,14 @@ async function logOut() {
 .pf-edit-btn { background: var(--brand-soft); color: var(--brand-accent); border: 1px solid var(--border); padding: 6px 14px; border-radius: 10px; font-weight: 600; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .pf-edit-cancel { background: var(--surface); }
 .pf-edit-btn:disabled { cursor: not-allowed; opacity: .6; }
-.pf-modal-backdrop { position: fixed; z-index: 10010; inset: 0; display: grid; place-items: center; padding: 16px; background: rgb(31 48 35 / 38%); backdrop-filter: blur(3px); }
-.pf-edit-modal, .pf-logout-modal { width: min(420px, 100%); padding: 24px; border: 1px solid var(--surface-soft); border-radius: 20px; background: var(--surface); box-shadow: 0 22px 65px rgb(31 57 38 / 24%); }
+.pf-modal-backdrop { position: fixed; z-index: 10010; inset: 0; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; background: rgb(31 48 35 / 38%); backdrop-filter: blur(3px); }
+.pf-edit-modal, .pf-logout-modal { width: min(420px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 24px; border: 1px solid var(--surface-soft); border-radius: 20px; background: var(--surface); box-shadow: 0 22px 65px rgb(31 57 38 / 24%); }
 .pf-edit-modal h2, .pf-logout-modal h2 { margin: 0; color: var(--text-strong); font-family: var(--font-display); font-size: 22px; }
 .pf-logout-modal p { margin: 8px 0 20px; color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
 .pf-modal-description { margin: 6px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
 .pf-edit-form { display: grid; gap: 8px; margin-top: 14px; }
 .pf-modal-label { color: var(--text-strong); font-size: 13px; font-weight: 600; }
-.pf-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.pf-modal-actions { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .pf-modal-actions .pf-edit-btn { min-height: 40px; padding-inline: 16px; font-size: 13px; }
 .pf-modal-actions-left { justify-content: flex-start; }
 .pf-edit-save, .pf-logout-confirm { background: var(--brand); border-color: var(--brand-accent); color: var(--on-brand); }
@@ -608,8 +608,8 @@ async function logOut() {
 .pf-input-error { border-color: color-mix(in srgb, var(--danger, #c84f4f) 55%, var(--border)); }
 .pf-field-error { color: var(--danger, #c84f4f); font-size: 12px; line-height: 1.35; }
 .pf-danger-btn { min-height: 44px; padding: 0 14px; border: 1px solid color-mix(in srgb, var(--danger, #c84f4f) 36%, var(--border)); border-radius: 12px; background: color-mix(in srgb, var(--danger, #c84f4f) 10%, var(--surface)); color: var(--danger, #c84f4f); cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; text-align: left; }
-.pf-tutorial-modal { width: min(560px, 100%); max-height: min(84vh, 760px); overflow: auto; padding: 22px; border: 1px solid var(--surface-soft); border-radius: 22px; background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface-soft) 55%, var(--surface))); box-shadow: 0 22px 65px rgb(31 57 38 / 24%); }
-.pf-tutorial-head { display: flex; align-items: flex-start; gap: 12px; }
+.pf-tutorial-modal { display: flex; width: min(560px, 100%); max-height: calc(100dvh - 32px); flex-direction: column; overflow: hidden; padding: 22px; border: 1px solid var(--surface-soft); border-radius: 22px; background: linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface-soft) 55%, var(--surface))); box-shadow: 0 22px 65px rgb(31 57 38 / 24%); }
+.pf-tutorial-head { display: flex; flex: 0 0 auto; align-items: flex-start; gap: 12px; }
 .pf-tutorial-badge { display: grid; width: 44px; height: 44px; flex-shrink: 0; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--brand-accent) 12%, var(--surface)); color: var(--brand-accent); font-size: 22px; }
 .pf-tutorial-head h2 { margin: 0; color: var(--text-strong); font-family: var(--font-display); font-size: 22px; font-weight: 600; }
 .pf-tutorial-steps { display: grid; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
@@ -629,7 +629,8 @@ async function logOut() {
 .pf-logout { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--brand); color: var(--on-brand); border: none; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 8px; }
 .pf-logout-green { background: var(--brand); color: var(--on-brand); }
 .pf-spacer { height: 8px; }
-.pf-alerts-body { display: grid; gap: 12px; margin-top: 14px; }
+.pf-alerts-body { display: grid; flex: 1 1 auto; min-height: 0; gap: 12px; margin-top: 14px; overflow-y: auto; overscroll-behavior: contain; }
+.pf-tutorial-steps { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .pf-alerts-card { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: color-mix(in srgb, var(--surface) 92%, var(--brand-soft)); }
 .pf-alerts-card h3 { margin: 0; color: var(--text-strong); font-size: 16px; font-family: var(--font-display); }
 .pf-alerts-card p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.45; }

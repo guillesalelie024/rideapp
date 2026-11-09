@@ -56,6 +56,9 @@ defineProps<{
   display: grid;
   place-items: center;
   padding: clamp(1rem, 4vw, 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background:
     radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--brand-accent) 16%, transparent), transparent 46%),
     rgb(7 27 18 / 56%);
@@ -67,8 +70,11 @@ defineProps<{
   position: relative;
   display: grid;
   width: min(370px, 100%);
+  max-height: calc(100dvh - clamp(2rem, 8vw, 4rem));
   gap: 0.85rem;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: clamp(1.25rem, 4vw, 1.6rem);
   border: 1px solid color-mix(in srgb, var(--brand-accent) 22%, var(--border));
   border-radius: var(--radius-xl);

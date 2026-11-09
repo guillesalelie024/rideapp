@@ -977,7 +977,10 @@ function selectRating(value: number) {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: rgb(15, 35, 27, 0.5);
   backdrop-filter: blur(3px);
 }
@@ -994,6 +997,7 @@ function selectRating(value: number) {
   display: grid;
   gap: 16px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .rating-header {

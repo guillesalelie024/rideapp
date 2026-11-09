@@ -1051,6 +1051,9 @@ onBeforeUnmount(stopLocation);
   display: grid;
   place-items: center;
   padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: rgb(15 35 27 / 55%);
   backdrop-filter: blur(3px);
 }
@@ -1063,6 +1066,7 @@ onBeforeUnmount(stopLocation);
   gap: 14px;
   padding: clamp(20px, 6vw, 28px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--surface-soft);
   border-radius: 24px;
   background: var(--surface);
