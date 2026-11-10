@@ -296,7 +296,11 @@ watch(open, (v) => { if (v) sync(); });
 .ride-notif-foot button { padding: 8px 6px; border: 0; background: transparent; color: var(--brand-accent); font-size: 12px; font-weight: 700; cursor: pointer; }
 .ride-notif-clear { color: var(--text-secondary) !important; font-weight: 600 !important; }
 .ride-notif-modal { position: fixed; inset: 0; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; background: color-mix(in srgb, var(--bg, #0b1410) 42%, transparent); backdrop-filter: blur(6px); z-index: 1010; }
-.ride-notif-modal-card { width: min(380px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; padding: 18px 18px 16px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-lg); }
+.ride-notif-modal-card { width: min(380px, 100%); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 18px 18px 16px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow-lg); scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--brand-accent) 55%, var(--border-strong)) transparent; }
+.ride-notif-modal-card::-webkit-scrollbar { width: 10px; }
+.ride-notif-modal-card::-webkit-scrollbar-track { background: transparent; }
+.ride-notif-modal-card::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: color-mix(in srgb, var(--brand-accent) 55%, var(--border-strong)); background-clip: padding-box; }
+.ride-notif-modal-card::-webkit-scrollbar-thumb:hover { background: var(--brand-accent); background-clip: padding-box; }
 .ride-notif-modal-head { position: sticky; top: -18px; z-index: 1; display: flex; align-items: center; justify-content: space-between; margin: -18px -18px 12px; padding: 18px 18px 0; background: var(--surface); border-radius: 24px 24px 0 0; }
 .ride-notif-modal-icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 14px; background: var(--surface-muted); color: var(--brand-accent); font-size: 22px; }
 .ride-notif-modal-icon.tone-alert { background: color-mix(in srgb, #d97706 14%, var(--surface-muted)); color: #b45309; }
@@ -337,7 +341,7 @@ watch(open, (v) => { if (v) sync(); });
   .ride-notif-empty { padding: 16px 14px; font-size: 12.5px; }
   .ride-notif-foot { padding: 8px 10px; }
   .ride-notif-modal { padding: 12px; align-items: end; }
-  .ride-notif-modal-card { width: 100%; max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; padding: 14px; border-radius: 18px; }
+  .ride-notif-modal-card { width: 100%; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; padding: 14px; border-radius: 18px; }
   .ride-notif-modal-head { top: -14px; margin: -14px -14px 12px; padding: 14px 14px 0; border-radius: 18px 18px 0 0; }
   .ride-notif-modal-card h3 { font-size: 17px; }
   .ride-notif-modal-detail, .ride-notif-modal-reminder, .ride-notif-modal-route, .ride-notif-modal-suggest { font-size: 12.5px; }
